@@ -1,0 +1,3999 @@
+{
+  "generatedAt": "2026-11-19T03:26:07.083Z",
+  "note": "把该行文字的前景置为 transparent、子节点隐藏，元素自身底色照常渲染，再截元素自己的盒子，对每个像素算一次与前景的比值，取第 5 百分位作为文字背后真实渲染色对应的比值，与 CSS 模型结果对照。",
+  "samples": 70,
+  "overridden": 10,
+  "maxDelta": 1.77,
+  "list": [
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 174
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 174
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 152
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 152
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 185
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 185
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 127
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 127
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 116
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 116
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 164
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 164
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 165
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 165
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.27,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 151
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#e4e6f8",
+      "pixelRatio": 12.36,
+      "pixelWorst": 12.36,
+      "pixelMedian": 12.39,
+      "delta": 1.77,
+      "modeShare": 0.47,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 151
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 129
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fb",
+      "pixelRatio": 14.06,
+      "pixelWorst": 14.03,
+      "pixelMedian": 14.06,
+      "delta": 0.07,
+      "modeShare": 0.91,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 129
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.22,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 162
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#eff1fb",
+      "pixelRatio": 13.47,
+      "pixelWorst": 13.44,
+      "pixelMedian": 13.58,
+      "delta": 0.66,
+      "modeShare": 0.37,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 162
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 104
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f0f1f8",
+      "pixelRatio": 13.46,
+      "pixelWorst": 13.34,
+      "pixelMedian": 13.7,
+      "delta": 0.67,
+      "modeShare": 0.16,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 104
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 93
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 93
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.22,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 141
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f5f6fc",
+      "pixelRatio": 13.72,
+      "pixelWorst": 13.69,
+      "pixelMedian": 14.07,
+      "delta": 0.41,
+      "modeShare": 0.47,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 141
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 142
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 142
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 151
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fb",
+      "pixelRatio": 14.06,
+      "pixelWorst": 13.94,
+      "pixelMedian": 14.06,
+      "delta": 0.07,
+      "modeShare": 0.52,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 151
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 129
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f5f6fc",
+      "pixelRatio": 13.7,
+      "pixelWorst": 13.7,
+      "pixelMedian": 13.93,
+      "delta": 0.43,
+      "modeShare": 0.25,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 129
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 162
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f5f6fc",
+      "pixelRatio": 13.93,
+      "pixelWorst": 13.91,
+      "pixelMedian": 14.07,
+      "delta": 0.2,
+      "modeShare": 0.42,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 162
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 104
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f3f4fa",
+      "pixelRatio": 13.79,
+      "pixelWorst": 13.7,
+      "pixelMedian": 13.82,
+      "delta": 0.34,
+      "modeShare": 0.23,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 104
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.19,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 93
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f3f4fb",
+      "pixelRatio": 13.82,
+      "pixelWorst": 13.82,
+      "pixelMedian": 13.94,
+      "delta": 0.31,
+      "modeShare": 0.35,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 93
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.22,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 141
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#e7ebfa",
+      "pixelRatio": 12.76,
+      "pixelWorst": 12.76,
+      "pixelMedian": 13.58,
+      "delta": 1.37,
+      "modeShare": 0.16,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 141
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5a5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.18,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          16,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 142
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          58,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 142
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 151
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 151
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 129
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 129
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 162
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f3f4fa",
+      "pixelRatio": 13.69,
+      "pixelWorst": 13.58,
+      "pixelMedian": 13.93,
+      "delta": 0.44,
+      "modeShare": 0.25,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 162
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 104
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fb",
+      "pixelRatio": 13.93,
+      "pixelWorst": 13.91,
+      "pixelMedian": 14.06,
+      "delta": 0.2,
+      "modeShare": 0.4,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 104
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 93
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 93
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 141
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f3f4fb",
+      "pixelRatio": 13.73,
+      "pixelWorst": 13.61,
+      "pixelMedian": 13.93,
+      "delta": 0.4,
+      "modeShare": 0.24,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 141
+      }
+    },
+    {
+      "selector": "span.flex.h-8.w-8.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.17,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.04,
+      "pixels": 827,
+      "clipMode": "inset-1",
+      "clippedOut": 197,
+      "shapeRadii": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            10
+          ]
+        ]
+      ],
+      "shapeSize": [
+        32,
+        32
+      ],
+      "geom": {
+        "cls": "flex h-8 w-8 shrink-0 items-center justify-center rounded-chip bg-brand-gradient text-[14px] font-bold text-white shadow",
+        "radius": [
+          "10px",
+          "10px",
+          "10px",
+          "10px"
+        ],
+        "rect": [
+          20,
+          12,
+          32,
+          32
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 142
+      }
+    },
+    {
+      "selector": "span.truncate.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#f4f6fc",
+      "modelRatio": 14.13,
+      "pixelBg": "#f4f5fc",
+      "pixelRatio": 14.07,
+      "pixelWorst": 14.07,
+      "pixelMedian": 14.07,
+      "delta": 0.06,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "truncate text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          62,
+          17,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 142
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 174
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 174
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 152
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 152
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 185
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 185
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 127
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 127
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 116
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 116
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 164
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 164
+      }
+    },
+    {
+      "selector": "span.flex.h-9.w-9.shrink-0.items-center “拾”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#4669e8",
+      "modelRatio": 4.74,
+      "pixelBg": "#5b5fe2",
+      "pixelRatio": 4.85,
+      "pixelWorst": 4.78,
+      "pixelMedian": 4.99,
+      "delta": 0.11,
+      "modeShare": 0.03,
+      "pixels": 1047,
+      "clipMode": "inset-1",
+      "clippedOut": 249,
+      "shapeRadii": [
+        [
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ],
+          [
+            12,
+            12
+          ]
+        ]
+      ],
+      "shapeSize": [
+        36,
+        36
+      ],
+      "geom": {
+        "cls": "flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-gradient text-[15px] font-bold text-white sha",
+        "radius": [
+          "12px",
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "rect": [
+          20,
+          24,
+          36,
+          36
+        ],
+        "text": " 拾 ",
+        "ownAuditCount": 165
+      }
+    },
+    {
+      "selector": "span.text-[15px].font-semibold.tracking-tight.text-ink-900 “拾光”",
+      "state": "normal",
+      "required": 4.5,
+      "modelBg": "#ffffff",
+      "modelRatio": 15.3,
+      "pixelBg": "#ffffff",
+      "pixelRatio": 15.3,
+      "pixelWorst": 15.3,
+      "pixelMedian": 15.3,
+      "delta": 0,
+      "modeShare": 1,
+      "pixels": 2079,
+      "clipMode": "inset-1.01",
+      "clippedOut": 345,
+      "shapeRadii": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "shapeSize": [
+        100,
+        23
+      ],
+      "geom": {
+        "cls": "text-[15px] font-semibold tracking-tight text-ink-900",
+        "radius": [
+          "0px",
+          "0px",
+          "0px",
+          "0px"
+        ],
+        "rect": [
+          66,
+          31,
+          100,
+          23
+        ],
+        "text": " 拾光CampusGo",
+        "ownAuditCount": 165
+      }
+    }
+  ]
+}

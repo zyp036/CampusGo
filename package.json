@@ -1,0 +1,39 @@
+{
+  "name": "campusgo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "拾光CampusGo — AI校园生活探索与娱乐规划平台（Monorepo 根）",
+  "workspaces": [
+    "apps/web",
+    "apps/server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:web": "npm run dev --workspace=@campusgo/web",
+    "dev:server": "npm run dev --workspace=@campusgo/server",
+    "build": "npm run build --workspace=@campusgo/web && npm run build --workspace=@campusgo/server",
+    "build:web": "npm run build --workspace=@campusgo/web",
+    "build:server": "npm run build --workspace=@campusgo/server",
+    "preview": "npm run preview --workspace=@campusgo/web",
+    "start:server": "npm run start --workspace=@campusgo/server",
+    "typecheck": "npm run typecheck --workspace=@campusgo/web && npm run typecheck --workspace=@campusgo/server",
+    "prisma:generate": "npm run prisma:generate --workspace=@campusgo/server",
+    "prisma:validate": "npm run prisma:validate --workspace=@campusgo/server",
+    "db:check": "npm run db:check --workspace=@campusgo/server",
+    "db:schema": "npm run db:schema --workspace=@campusgo/server",
+    "probe:errors": "npm run probe:errors --workspace=@campusgo/server",
+    "probe:validation": "npm run probe:validation --workspace=@campusgo/server",
+    "probe:security": "npm run probe:security --workspace=@campusgo/server",
+    "probe:data": "npm run probe:data --workspace=@campusgo/server",
+    "test:responsive": "npm run test:responsive --workspace=@campusgo/web",
+    "test:interaction": "npm run test:interaction --workspace=@campusgo/web",
+    "test:database": "npm run test:database --workspace=@campusgo/web",
+    "test:api": "npm run test:api --workspace=@campusgo/web"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

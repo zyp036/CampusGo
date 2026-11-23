@@ -1,0 +1,41 @@
+{
+  "name": "@campusgo/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "拾光CampusGo 前端（Vue 3 + TypeScript + Vite）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "build-only": "vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "test:responsive": "playwright test",
+    "test:interaction": "playwright test tests/phase22-interaction.spec.ts",
+    "test:database": "playwright test tests/phase31-database.spec.ts",
+    "test:api": "playwright test tests/phase331-api.spec.ts --project=api",
+    "test:content": "playwright test tests/phase343-real-data.spec.ts tests/phase343-mapping.spec.ts --project=api",
+    "test:states": "playwright test tests/phase344-states.spec.ts tests/phase344-copy.spec.ts --project=api",
+    "test:offline": "playwright test --config=playwright.offline.config.ts",
+    "test:p35": "playwright test --config=playwright.p35.config.ts",
+    "test:responsive:report": "playwright show-report"
+  },
+  "dependencies": {
+    "@lucide/vue": "^1.75.0",
+    "axios": "^1.21.1",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.45",
+    "vue-router": "^5.5.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8",
+    "vue-tsc": "^3.3.14"
+  }
+}

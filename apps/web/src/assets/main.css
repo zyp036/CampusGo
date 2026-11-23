@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================================================================
+   CampusGo 设计令牌
+   颜色以「空格分隔的 RGB 三元组」存储，供 Tailwind 的
+   rgb(var(--x) / <alpha-value>) 语法消费，因此 bg-brand-500/10 这类
+   透明度写法依然有效。注释中标注了对应的十六进制值。
+   =================================================================== */
+:root {
+  /* 主蓝色阶 —— 500 = #4569E8（品牌主蓝） */
+  --c-brand-50: 239 243 254; /* #EFF3FE */
+  --c-brand-100: 223 231 253; /* #DFE7FD */
+  --c-brand-200: 168 183 245; /* #A8B7F5（浅蓝辅助） */
+  --c-brand-300: 126 147 240; /* #7E93F0 */
+  --c-brand-400: 95 123 237; /* #5F7BED */
+  --c-brand-500: 69 105 232; /* #4569E8 */
+  --c-brand-600: 53 81 204; /* #3551CC */
+  --c-brand-700: 43 65 166; /* #2B41A6 */
+  --c-brand-800: 38 56 133; /* #263885 */
+  --c-brand-900: 34 50 107; /* #22326B */
+  --c-brand-950: 22 32 74; /* #16204A */
+
+  /* 辅助紫色阶 —— 500 = #7665E8 */
+  --c-accent-50: 243 241 254; /* #F3F1FE */
+  --c-accent-100: 232 229 253; /* #E8E5FD */
+  --c-accent-200: 210 204 251; /* #D2CCFB */
+  --c-accent-300: 181 171 247; /* #B5ABF7 */
+  --c-accent-400: 148 132 241; /* #9484F1 */
+  --c-accent-500: 118 101 232; /* #7665E8 */
+  --c-accent-600: 98 80 212; /* #6250D4 */
+  --c-accent-700: 81 64 180; /* #5140B4 */
+  --c-accent-800: 68 56 145; /* #443891 */
+  --c-accent-900: 62 53 118; /* #3E3576 */
+
+  /* 文字色，由深到浅
+     ink-400 / ink-300 在阶段2.2 的对比度审计里不达标（#7C86A0 在白底只有 3.64:1，
+     #9AA3BA 只有 2.52:1，正文要求 4.5:1），这里把两档统一到实测 4.97:1 的灰蓝；
+     两档先保持同值，避免一次性重做层次，后续要拉开层级再单独调。 */
+  --c-ink-900: 27 36 64; /* #1B2440 主标题 */
+  --c-ink-700: 51 62 92; /* #333E5C 正文 */
+  --c-ink-500: 90 100 128; /* #5A6480 次要说明 */
+  --c-ink-400: 96 107 132; /* #606B84 弱化文字（原 #7C86A0，对比度不足） */
+  --c-ink-300: 96 107 132; /* #606B84 占位符（原 #9AA3BA，对比度不足） */
+
+  /* 背景层 */
+  --c-surface-page: 244 246 252; /* #F4F6FC 页面背景 */
+  --c-surface-card: 255 255 255; /* #FFFFFF 卡片背景 */
+  --c-surface-muted: 250 251 254; /* #FAFBFE 分区背景 */
+  --c-surface-sunken: 238 241 248; /* #EEF1F8 内凹/悬停 */
+
+  /* 描边 —— line / line-strong 只用于分隔线与卡片外框（不需要 3:1，
+     组件身份由里面的文字给出）。可操作控件的边框必须用 line-control：
+     WCAG 1.4.11 要求「识别控件本身」的视觉信息对相邻颜色达到 3:1。 */
+  --c-line: 228 233 244; /* #E4E9F4 */
+  --c-line-strong: 210 217 234; /* #D2D9EA */
+  --c-line-control: 101 112 139; /* #65708B 控件边框：白底 3.57:1、页面底 3.42:1 */
+  --c-line-control-strong: 83 94 123; /* #535E7B 边框即唯一边界时（描边按钮）：白底 4.62:1 */
+
+  /* 语义状态色
+     warning-600 / success-600 是「浅底 + 深色文字」这对组合里实际使用的文字色，
+     审计值 3.04:1 与 4.22:1 不到正文 4.5:1，因此各自加深；500 档继续作为图标、
+     进度条等图形填充色使用，不参与小字文字。 */
+  --c-success-50: 236 250 243;
+  --c-success-500: 23 166 115;
+  --c-success-600: 10 112 80; /* #0A7050 原 #12865F，浅绿底上 4.22:1 → 5.28:1 */
+  --c-warning-50: 255 246 232;
+  --c-warning-500: 227 154 31;
+  --c-warning-600: 149 94 1; /* #955E01 原 #C2810F，浅黄底上 3.04:1 → 4.55:1 */
+  --c-danger-50: 254 241 242;
+  --c-danger-500: 226 85 99;
+  --c-danger-600: 198 62 76;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-surface-page font-sans text-ink-700 antialiased;
+    -webkit-tap-highlight-color: transparent;
+    /* 阶段1 的全局 padding-bottom hack 已移除：
+       底部导航让位改由布局组件按端点分别控制，避免 PC 端出现大片空白 */
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-ink-900;
+    text-wrap: balance;
+  }
+
+  /* 键盘可达性：统一焦点环
+     半透明的 brand-500/45 实际渲染成 #ABBBF4，与白底只有 1.88:1，达不到
+     「焦点指示器本身要能被看见」的要求，因此改成实色 brand-600（白底 8.06:1）。 */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-600 ring-offset-2 ring-offset-surface-page;
+  }
+
+  /* 尊重系统「减少动态效果」偏好 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* ---------- 卡片 ---------- */
+  .cg-card {
+    @apply rounded-card border border-line/60 bg-surface-card shadow-card;
+  }
+
+  .cg-card-flat {
+    @apply rounded-card border border-line/60 bg-surface-card;
+  }
+
+  .cg-card-interactive {
+    @apply transition-all duration-200 ease-smooth hover:-translate-y-0.5 hover:border-brand-200/70 hover:shadow-hover;
+  }
+
+  .cg-panel {
+    @apply rounded-inner bg-surface-muted p-4;
+  }
+
+  /* ---------- 按钮 ---------- */
+  .cg-btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-control font-semibold
+      transition-all duration-200 ease-smooth
+      disabled:pointer-events-none disabled:opacity-55;
+  }
+
+  .cg-btn--lg {
+    @apply h-12 px-6 text-body;
+  }
+  .cg-btn--md {
+    @apply h-10 px-4 text-body-sm;
+  }
+  .cg-btn--sm {
+    @apply h-8 px-3 text-caption;
+  }
+  .cg-btn--icon {
+    @apply h-9 w-9 p-0;
+  }
+
+  .cg-btn--primary {
+    @apply bg-brand-500 text-white shadow-[0_6px_18px_-6px_rgb(69_105_232/0.55)] hover:bg-brand-600 active:bg-brand-700 focus-visible:ring-brand-500;
+  }
+  .cg-btn--gradient {
+    @apply bg-brand-gradient text-white shadow-glow hover:brightness-[1.06] active:brightness-95 focus-visible:ring-brand-500;
+  }
+  .cg-btn--soft {
+    @apply bg-brand-50 text-brand-700 hover:bg-brand-100 active:bg-brand-200 focus-visible:ring-brand-500;
+  }
+  /* 描边按钮没有实心底色，边框就是它唯一的边界，所以用更重的 line-control-strong */
+  .cg-btn--outline {
+    @apply border border-line-control-strong bg-surface-card text-ink-700 hover:border-brand-600 hover:text-brand-700 focus-visible:ring-brand-600;
+  }
+  .cg-btn--ghost {
+    @apply text-ink-500 hover:bg-surface-sunken hover:text-ink-900 focus-visible:ring-brand-600;
+  }
+  .cg-btn--danger {
+    @apply bg-danger-500 text-white hover:bg-danger-600 focus-visible:ring-danger-500;
+  }
+
+  /* ---------- 表单控件 ---------- */
+  /* 控件边框统一用 --c-line-control：白底 3.57:1，满足 1.4.11 的 3:1；
+     输入框的焦点光环同理改成实色，半透明 [0.12] 渲染出来与白底几乎无差。 */
+  .cg-input {
+    @apply w-full rounded-control border border-line-control bg-surface-card px-3.5 py-2.5 text-body text-ink-900
+      placeholder:text-ink-300 transition-colors duration-200
+      focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500;
+  }
+
+  .cg-label {
+    @apply mb-1.5 block text-caption font-semibold text-ink-500;
+  }
+
+  .cg-hint {
+    @apply mt-1.5 text-caption leading-relaxed text-ink-400;
+  }
+
+  /* ---------- 标签 / 徽章 ---------- */
+  .cg-chip {
+    @apply inline-flex min-h-[34px] cursor-pointer select-none items-center gap-1.5 rounded-pill border border-line-control
+      bg-surface-card px-3.5 py-1.5 text-caption font-medium text-ink-500
+      transition-all duration-200 ease-smooth hover:border-brand-300 hover:text-brand-700;
+  }
+
+  .cg-chip--active {
+    @apply border-brand-500 bg-brand-500 text-white shadow-[0_4px_14px_-4px_rgb(69_105_232/0.5)] hover:border-brand-600 hover:text-white;
+  }
+
+  .cg-badge {
+    @apply inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[11px] font-semibold leading-none;
+  }
+
+  /** 演示数据标识：所有非真实数据统一使用这个样式 */
+  .cg-demo-tag {
+    @apply inline-flex items-center gap-1 rounded-chip bg-warning-50 px-2 py-1 text-[11px] font-semibold text-warning-600;
+  }
+
+  /* ---------- 排版辅助 ---------- */
+  .cg-eyebrow {
+    @apply text-overline text-brand-600;
+  }
+
+  .cg-section-title {
+    @apply text-h2;
+  }
+
+  .cg-muted {
+    @apply text-body-sm text-ink-500;
+  }
+
+  /* ---------- 压在照片/地图上的控件 ---------- */
+  /* 背景是照片或地图网格时，全站通用的 brand-600 色环会画在同色系上（实测 1.7—2.7:1，
+     达不到焦点指示器 3:1）。这里把指示器改成「深色留白 + 白色色环」两段：
+     白环对深色留白带、深色留白带对照片，任一侧都能拉开 3:1，浅照片上也不会整圈消失。 */
+  .cg-focus-on-image {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white
+      focus-visible:ring-offset-2 focus-visible:ring-offset-ink-900;
+  }
+
+  /* ---------- 横向滚动卡片行（移动端不产生整页溢出） ---------- */
+  .cg-scroll-x {
+    @apply flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1
+      [-ms-overflow-style:none] [scrollbar-width:none]
+      [&::-webkit-scrollbar]:hidden;
+  }
+
+  /* ---------- 图标底色块 ---------- */
+  .cg-icon-tile {
+    @apply flex shrink-0 items-center justify-center rounded-inner text-white;
+  }
+
+  /* ---------- 地图占位区的示意网格（阶段6 换成真实地图组件） ---------- */
+  .cg-map-grid {
+    background-color: rgb(var(--c-brand-50));
+    background-image: linear-gradient(rgb(var(--c-line) / 0.9) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--c-line) / 0.9) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+}

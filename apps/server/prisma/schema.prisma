@@ -1,0 +1,347 @@
+// 阶段3.2：按 2026-11-19 审核通过的《数据库模型设计方案》落地 11 张业务表。
+// 完整口径（为什么不建某张表、级联矩阵、归属与权限）见 docs/db-model-design-3.2.md。
+//
+// 连接方式沿用阶段3.1：provider = mysql，连接串形如 mysql://user:pass@127.0.0.1:3307/campusgo，
+// 端口与口令只写在 apps/server/.env 的 DATABASE_URL 里，源码和 Schema 都不含凭据。
+// 本机同时运行 MySQL 5.7.44（3306，原有用途，本项目未动）与 MySQL 8.4.13（3307，只绑 127.0.0.1）。
+//
+// 命名约定：表名统一 cg_ 前缀（user、memory 与 MySQL 系统对象/关键字重名风险高）；
+// 字段用 @map 落成 snake_case，Prisma 侧保持 camelCase。
+//
+// 主键约定：内容表（地点/任务/徽章/活动）用可读稳定 ID 作主键，沿用前端 data/*.ts 现有编号，
+// 导入脚本可按 ID 幂等 upsert；用户产生的记录用 cuid，避免暴露可枚举的自增号。
+//
+// 有意不建：School（首个演示校园即江苏大学）、Level（等级由 total_exp + 常量门槛推导）、
+// 照片表（阶段8）、签到表（阶段7）、规划规则库与历史表（阶段5 由 AI 接口决定归属）。
+// 地点经纬度列有意不加：探索页地图现在是百分比示意定位，加列只能填假坐标。
+// 任何表都不保存明文口令；与口令相关的列只有 cg_user.password_hash，且存的是单向摘要。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// 账号状态：注销走 DISABLED，不做物理删除，避免内容表的外键悬空
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+/// 地点真实性标记：现有演示数据是 DEMO，阶段4 换成经确认的江苏大学数据后逐条改 VERIFIED
+enum PlaceSource {
+  DEMO
+  VERIFIED
+}
+
+enum ChallengeKind {
+  DAILY
+  EXPLORE
+}
+
+/// NONE 表示这枚徽章当前没有可计算的数据来源（依赖签到、照片、地点打卡）
+enum BadgeMetric {
+  NONE
+  TASK
+  EXPLORE_TASK
+  ACTIVITY
+}
+
+/// AUTO = 由规则真实算出；SEED = 演示种子，页面必须继续显示「示例状态」说明
+enum BadgeSource {
+  AUTO
+  SEED
+}
+
+/// 只表达「还在收人 / 已结束」；报名中·即将满员·已满由参与人数与 capacity 现场算，避免两处口径漂移
+enum ActivityStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  id           String     @id @default(cuid()) @db.Char(25)
+  /// 页面展示的用户码（CG-2026-0418 这一类），阶段4 由服务端生成
+  userCode     String     @unique @map("user_code") @db.VarChar(24)
+  /// 上限与 ProfileView 的 2—16 字校验一致
+  nickname     String     @db.VarChar(16)
+  signature    String     @default("") @db.VarChar(120)
+  school       String     @default("江苏大学") @db.VarChar(64)
+  major        String?    @db.VarChar(64)
+  grade        String?    @db.VarChar(16)
+  /// 只存单向摘要（argon2id 或 bcrypt，含算法与 salt 前缀）；本轮种子写 !reserved 这类不可验证占位串
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  /// 派生缓存：与 cg_user_challenge.exp_awarded 之和保持一致，由阶段4 在同一事务里写入
+  totalExp     Int        @default(0) @map("total_exp")
+  points       Int        @default(0)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  preferences    UserPreference[]
+  memories       Memory[]
+  challenges     UserChallenge[]
+  badges         UserBadge[]
+  favoritePlaces UserFavoritePlace[]
+  hosted         PartnerActivity[]
+  participations ActivityParticipant[]
+  sessions       Session[]
+
+  @@map("cg_user")
+}
+
+/// 一行一个开关：兴趣标签(tag)、三组偏好(interest/plan/notify)、规划表单默认值(budget/mood/company)。
+/// 单选组「同组只有一行为真」由阶段4 服务层保证，不在数据库里动用生成列的技巧。
+/// 选项白名单来自 apps/web/src/data/{profile,plan}.ts，新增选项不需要改表结构。
+model UserPreference {
+  id        String   @id @default(cuid()) @db.Char(25)
+  userId    String   @map("user_id") @db.Char(25)
+  groupKey  String   @map("group_key") @db.VarChar(24)
+  optionKey String   @map("option_key") @db.VarChar(32)
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupKey, optionKey])
+  @@index([userId, groupKey, enabled])
+  @@map("cg_user_preference")
+}
+
+/// 校园与周边地点。阶段6 新增经纬度字段，使用 GCJ-02 坐标系（高德地图要求）。
+model CampusPlace {
+  id            String      @id @db.VarChar(32)
+  name          String      @db.VarChar(64)
+  /// 内容分类 study/outdoor/food/sport/culture/view，用 VARCHAR 而不是 ENUM：加分类不该动表结构
+  category      String      @db.VarChar(24)
+  reason        String      @db.VarChar(255)
+  bestTime      String?     @map("best_time") @db.VarChar(64)
+  durationLabel String?     @map("duration_label") @db.VarChar(32)
+  distanceLabel String?     @map("distance_label") @db.VarChar(32)
+  /// 存 coverGradients 的 key（dusk/blue/mist…），渲染时再换成 Tailwind class
+  coverGradient String      @map("cover_gradient") @db.VarChar(32)
+  rating        Decimal     @default(0) @db.Decimal(2, 1)
+  /// 展示标签数组；MySQL 的 JSON 列没有默认值，由应用层总写 []
+  tags          Json
+  source        PlaceSource @default(DEMO)
+  
+  /// 阶段6 新增：经纬度坐标（GCJ-02 坐标系，高德地图要求）。
+  /// 可空：历史数据和演示数据可能没有坐标，地图组件需处理 null 情况。
+  /// Decimal(10, 7) 精度足够到厘米级（经度最大 180°，纬度最大 90°）。
+  latitude      Decimal?    @db.Decimal(10, 7)
+  longitude     Decimal?    @db.Decimal(10, 7)
+  
+  /// 阶段6 新增：详细地址（可选，用于地图搜索和路线规划）。
+  address       String?     @db.VarChar(200)
+  
+  /// 阶段6 新增：校区标识（江苏大学有多个校区，需区分）。
+  /// 枚举值：MAIN（本部/南校区）、NORTH（北校区）、EAST（东校区）等。
+  /// 可空：历史数据可能未标注校区。
+  campus        String?     @db.VarChar(32)
+  
+  createdAt     DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  memories  Memory[]
+  favorites UserFavoritePlace[]
+
+  @@index([category])
+  @@index([name])
+  @@index([campus])
+  @@map("cg_campus_place")
+}
+
+/// 任务定义表，不承担「每天刷新」的语义；每日实例与连续签到属阶段7。
+/// 下架用 active=0，不删行——删掉会让历史完成记录的外键悬空。
+model Challenge {
+  id          String        @id @db.VarChar(32)
+  kind        ChallengeKind
+  title       String        @db.VarChar(80)
+  description String        @db.VarChar(200)
+  exp         Int
+  sortOrder   Int           @default(0) @map("sort_order")
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  users UserChallenge[]
+
+  @@index([kind, active])
+  @@map("cg_challenge")
+}
+
+/// 一个用户一个任务最多一条：勾掉就是删行。
+/// exp_awarded / points_awarded 是完成时刻的快照，取消完成时按快照回滚 cg_user 的缓存值，
+/// 这样任务经验值以后调整也不会把历史积分扣错。
+model UserChallenge {
+  id            String   @id @default(cuid()) @db.Char(25)
+  userId        String   @map("user_id") @db.Char(25)
+  challengeId   String   @map("challenge_id") @db.VarChar(32)
+  expAwarded    Int      @map("exp_awarded")
+  pointsAwarded Int      @map("points_awarded")
+  completedAt   DateTime @map("completed_at") @db.DateTime(3)
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, challengeId])
+  @@index([userId, completedAt])
+  @@index([challengeId])
+  @@map("cg_user_challenge")
+}
+
+/// 徽章定义。点亮状态不属于这张表，只在 cg_user_badge 里。
+/// 不变式：metric = NONE 时 target 必须为 NULL。设计方案里那条可选的数据库 CHECK 没有落地——
+/// 实测 Prisma 6.19.3 既不认识 @@check，previewFeatures 列表里也没有 checkedConstraints，
+/// 手写 SQL 补一条又会在下次 migrate diff 时被当成多余对象删掉，所以这条只由阶段4 服务层校验。
+model Badge {
+  id          String      @id @db.VarChar(32)
+  name        String      @db.VarChar(32)
+  description String      @db.VarChar(120)
+  /// lucide 图标组件名（Footprints/Flame/Gem…），前端映射成图标
+  iconKey     String      @map("icon_key") @db.VarChar(32)
+  metric      BadgeMetric @default(NONE)
+  target      Int?
+  /// 未解锁时说明卡在什么数据上，页面上直接显示
+  unlockNote  String?     @map("unlock_note") @db.VarChar(255)
+  sortOrder   Int         @default(0) @map("sort_order")
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  users UserBadge[]
+
+  @@index([active, sortOrder])
+  @@map("cg_badge")
+}
+
+model UserBadge {
+  id         String      @id @default(cuid()) @db.Char(25)
+  userId     String      @map("user_id") @db.Char(25)
+  badgeId    String      @map("badge_id") @db.VarChar(32)
+  unlockedAt DateTime    @map("unlocked_at") @db.DateTime(3)
+  source     BadgeSource @default(AUTO)
+  createdAt  DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt  DateTime    @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, badgeId])
+  @@index([badgeId])
+  @@map("cg_user_badge")
+}
+
+/// 时光记录。date_key 是唯一的日期来源（时间线按月分组由它推导）；
+/// MySQL 的 DATE 会被驱动读成 UTC 零点，取回后按 ISO 前 10 位还原文字。
+/// place_id 可空：补记的地点输入框允许填候选之外的自由文字，那份原文存在 location_label。
+model Memory {
+  id            String   @id @default(cuid()) @db.Char(25)
+  userId        String   @map("user_id") @db.Char(25)
+  title         String   @db.VarChar(80)
+  dateKey       DateTime @map("date_key") @db.Date
+  placeId       String?  @map("place_id") @db.VarChar(32)
+  locationLabel String   @map("location_label") @db.VarChar(120)
+  activityType  String   @map("activity_type") @db.VarChar(32)
+  expGained     Int      @default(0) @map("exp_gained")
+  /// 过渡列：阶段8 有真实照片表之后由照片计数取代
+  photoCount    Int      @default(0) @map("photo_count")
+  coverGradient String   @map("cover_gradient") @db.VarChar(32)
+  note          String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place CampusPlace? @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, dateKey])
+  @@index([placeId])
+  @@map("cg_memory")
+}
+
+/// 兴趣搭子活动。演示数据的主办人不是注册用户，host_user_id 为 NULL，
+/// 昵称与身份另存两列，保证主办人注销后卡片仍能渲染。
+model PartnerActivity {
+  id              String         @id @db.VarChar(32)
+  title           String         @db.VarChar(80)
+  hostUserId      String?        @map("host_user_id") @db.Char(25)
+  hostDisplayName String         @map("host_display_name") @db.VarChar(40)
+  hostIdentity    String?        @map("host_identity") @db.VarChar(60)
+  category        String         @db.VarChar(24)
+  description     String         @db.VarChar(500)
+  location        String         @db.VarChar(120)
+  /// 演示文案「11 月 18 日 19:00」没有年份，种子留 NULL；有真实时刻时由阶段9 写入
+  startsAt        DateTime?      @map("starts_at") @db.DateTime(3)
+  dateLabel       String         @map("date_label") @db.VarChar(40)
+  capacity        Int
+  interestTags    Json           @map("interest_tags")
+  coverGradient   String         @map("cover_gradient") @db.VarChar(32)
+  status          ActivityStatus @default(OPEN)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  host         User?                 @relation(fields: [hostUserId], references: [id], onDelete: SetNull)
+  participants ActivityParticipant[]
+
+  @@index([category, status])
+  @@index([startsAt])
+  @@index([hostUserId])
+  @@map("cg_partner_activity")
+}
+
+/// 报名关系（用户 N:M 活动）。同一人不能占两个名额；是否满员在阶段4 服务层用
+/// COUNT(本表) 与 capacity 比较，不靠数据库约束。取消报名 = 删行，与前端本地状态语义一致。
+model ActivityParticipant {
+  id         String   @id @default(cuid()) @db.Char(25)
+  activityId String   @map("activity_id") @db.VarChar(32)
+  userId     String   @map("user_id") @db.Char(25)
+  joinedAt   DateTime @default(now()) @map("joined_at") @db.DateTime(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  activity PartnerActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+  @@index([userId, joinedAt])
+  @@map("cg_activity_participant")
+}
+
+/// 探索页收藏：当前存在浏览器缓存里的那份数据，落库后可按收藏时间排序。
+model UserFavoritePlace {
+  id        String   @id @default(cuid()) @db.Char(25)
+  userId    String   @map("user_id") @db.Char(25)
+  placeId   String   @map("place_id") @db.VarChar(32)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place CampusPlace @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, placeId])
+  @@index([userId, createdAt])
+  @@map("cg_user_favorite_place")
+}
+
+/// 登录会话。token 是 32 字节随机数的 hex 编码（64 字符），作为 HttpOnly cookie 下发。
+/// 不存任何用户凭据或可猜测的标识；查库时按 token 精确匹配，命中即认为已认证。
+/// 过期由 expiresAt 控制，服务端在每次请求时检查。
+model Session {
+  id        String   @id @default(cuid()) @db.Char(25)
+  token     String   @unique @db.VarChar(64)
+  userId    String   @map("user_id") @db.Char(25)
+  expiresAt DateTime @map("expires_at") @db.DateTime(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("cg_session")
+}
