@@ -66,12 +66,6 @@ const joinableCount = computed(
 const matchedButFull = computed(
   () => sourceActivities.value.filter((a) => isMatched(a.id) && a.status === 'full').length
 )
-const filtersActive = computed(
-  () => (activeCategory.value[0] ?? 'all') !== 'all' || onlyOpen.value || onlyMatched.value || onlyHosted.value
-)
-const visibleJoinableCount = computed(
-  () => visibleActivities.value.filter((a) => isMatched(a.id) && a.status !== 'full').length
-)
 
 const joinBusy = ref(false)
 async function toggleJoin(activityId: string): Promise<void> {
@@ -356,12 +350,6 @@ onMounted(() => {
           列表 {{ visibleActivities.length }}/{{ totalCount }} 场
         </span>
       </div>
-
-      <p class="cg-hint" data-testid="partner-count-note">
-        口径：顶部「我可报名 {{ joinableCount }} 场」= 命中我的兴趣标签且名额未满，按全部
-        {{ totalCount }} 场算，不跟着筛选变；
-        {{ filtersActive ? `当前筛选后列表里是 ${visibleActivities.length} 场，其中可报名 ${visibleJoinableCount} 场。` : '现在没加筛选，两个数一致。人数与名额状态来自服务端真实计数。' }}
-      </p>
     </BaseCard>
 
     <!-- 报名/主办操作反馈（真实模式，后端原文） -->
@@ -382,12 +370,7 @@ onMounted(() => {
 
     <!-- 活动列表 -->
     <div class="mt-6">
-      <SectionHeader
-        title="进行中的招募"
-        :description="isReal
-          ? '点标题或「看详情」打开说明；报名与取消真实写入服务端，名额由服务端计数'
-          : '点标题或「看详情」打开说明；报名与取消保存在浏览器本地'"
-      />
+      <SectionHeader title="进行中的招募" />
 
       <!-- 真实模式取数状态 -->
       <BaseCard v-if="isReal && user.activitiesLoading" class="text-center" data-testid="partner-activities-loading">

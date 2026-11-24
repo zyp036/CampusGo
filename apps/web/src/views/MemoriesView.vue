@@ -501,9 +501,6 @@ watch(
   <PageContainer
     eyebrow="模块五 · 生活记忆"
     title="你走过的路，都会留在这里"
-    :description="isReal
-      ? '完成计划或挑战后沉淀的记录，也可以手动补一条。记录绑定你的账号、保存在服务端，可以编辑与删除，刷新或换设备登录都还在。每条记录最多 9 张照片。'
-      : '完成计划或挑战后沉淀的记录，也可以手动补一条。记录保存在浏览器本地，可以编辑与删除，刷新页面还在。'"
   >
     <template #actions>
       <div class="flex flex-wrap items-center gap-2">
@@ -585,10 +582,6 @@ watch(
         :icon="stat.icon"
       />
     </div>
-    <p class="cg-hint">
-      <template v-if="isReal">上面四格直接数下面这份服务端记录，补一条或删一条就会跟着变；数字来自你的账号，不是示例。</template>
-      <template v-else>上面四格直接数下面这份列表，补一条就会跟着变；补记写在这台设备的浏览器本地，刷新页面后还在。</template>
-    </p>
 
     <!-- 照片：真实模式接后端四条图片接口，演示模式保持占位 -->
     <BaseCard variant="flat" class="mt-5">
@@ -834,7 +827,6 @@ watch(
               :max="todayIso()"
               required
             />
-            <p class="cg-hint">格式是 YYYY-MM-DD，最晚只能选今天；时间线按它归到对应月份。</p>
           </div>
           <div>
             <label class="cg-label" for="memory-type">类型</label>
@@ -877,7 +869,6 @@ watch(
               {{ hint }}
             </button>
           </div>
-          <p class="cg-hint">候选只是提示，也可以直接写别的地方。</p>
         </div>
 
         <div>
@@ -955,10 +946,6 @@ watch(
           <p v-if="formPhotoError" class="mt-1 text-caption text-danger-600" data-testid="memory-form-photo-error">
             {{ formPhotoError }}
           </p>
-          <p v-if="isReal" class="mt-1 text-caption text-ink-400">
-            <Camera :size="13" aria-hidden="true" />
-            单张不超过 5 MB，保存记录时一起上传
-          </p>
           <DemoTag v-if="!isReal" text="照片上传在真实模式下开放" />
         </div>
 
@@ -982,7 +969,6 @@ watch(
             {{ saving ? '保存中' : editingId ? '保存修改' : '保存到时间线' }}
           </BaseButton>
           <BaseButton variant="ghost" size="md" @click="closeForm">取消</BaseButton>
-          <span v-if="!isReal" class="text-caption text-ink-400">记录保存在浏览器本地</span>
         </div>
       </form>
     </BaseModal>

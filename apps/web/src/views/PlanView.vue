@@ -449,7 +449,6 @@ onMounted(() => {
                 :aria-label="group.label"
                 @update:model-value="selections[group.id] = $event"
               />
-              <p class="cg-hint">{{ group.description }}</p>
             </div>
           </div>
 

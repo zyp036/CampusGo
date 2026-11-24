@@ -224,7 +224,6 @@ const completedCountText = computed(() =>
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3.5">
           <DemoTag v-if="!isReal" :text="DEMO_NOTICE_LOCAL_STATE" />
-          <p v-else class="text-caption text-ink-400">完成记录写在服务端，经验与积分由服务端入账。</p>
           <BaseButton :to="{ name: 'challenge' }" variant="ghost" size="sm" :icon="Trophy">
             查看全部挑战与徽章
           </BaseButton>

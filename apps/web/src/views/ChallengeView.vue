@@ -415,12 +415,6 @@ onMounted(() => {
           :count="3"
           label="日常任务"
         />
-        <p v-else-if="isReal" class="text-caption text-ink-400" data-testid="challenge-daily-empty">
-          <template v-if="content.challenges.status === 'failed'">
-            DAILY 任务定义没有取到，请确认后端在运行；上面有失败原因，可以直接点重试。
-          </template>
-          <template v-else>接口正常返回，数据库里的 DAILY 任务定义当前是 0 条。</template>
-        </p>
       </BaseCard>
 
       <BaseCard>
@@ -449,13 +443,6 @@ onMounted(() => {
           :count="3"
           label="探索任务"
         />
-        <p v-else-if="isReal" class="text-caption text-ink-400" data-testid="challenge-explore-empty">
-          <template v-if="content.challenges.status === 'failed'">
-            EXPLORE 任务定义没有取到。这一组和日常任务同属一次 `GET /challenges` 请求，
-            失败原因与重试入口在「今日日常任务」卡片里。
-          </template>
-          <template v-else>接口正常返回，数据库里的 EXPLORE 任务定义当前是 0 条。</template>
-        </p>
       </BaseCard>
     </div>
 
@@ -515,12 +502,6 @@ onMounted(() => {
         :count="6"
         label="徽章定义"
       />
-      <p v-else-if="isReal" class="text-caption text-ink-400" data-testid="challenge-badge-empty">
-        <template v-if="content.badges.status === 'failed'">
-          徽章定义没有取到，请确认后端在运行；提示条里有失败原因，点重试再问一次。
-        </template>
-        <template v-else>接口正常返回，数据库里的徽章定义当前是 0 条。</template>
-      </p>
     </div>
 
     <TaskDetailModal
