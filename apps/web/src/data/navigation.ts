@@ -17,7 +17,7 @@ export const navItems: NavItem[] = [
   },
   {
     routeName: 'plan',
-    label: 'AI生活规划',
+    label: '生活规划',
     shortLabel: '规划',
     description: '校园地点、预算时间，一次安排明白',
     icon: Sparkles,

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   changePasswordHandler,
+  demoAccountHandler,
   loginHandler,
   logoutHandler,
   meHandler,
@@ -36,6 +37,7 @@ const authRouter = Router()
 
 /** 公开接口 */
 authRouter.post('/register', parseRegisterBody, registerHandler)
+authRouter.post('/demo-account', demoAccountHandler)
 authRouter.post('/login', parseLoginBody, loginHandler)
 authRouter.post('/logout', logoutHandler)
 

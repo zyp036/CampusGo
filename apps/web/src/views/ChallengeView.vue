@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { Coins, RotateCcw, Target, Trophy } from '@lucide/vue'
 import BadgeDetailModal from '@/components/challenge/BadgeDetailModal.vue'
 import BadgeTile from '@/components/challenge/BadgeTile.vue'
@@ -25,8 +26,12 @@ const user = useUserStore()
 const content = useContentStore()
 
 const isReal = computed(() => content.mode === 'real')
+const isAuthed = computed(() => user.isAuthenticated)
+/** 真实模式未登录：定义可以公开读，但完成记录与徽章判定属于账号，先给登录入口 */
+const needsLogin = computed(() => isReal.value && !isAuthed.value)
 
 const feedback = ref<string | null>(null)
+const feedbackTone = ref<'success' | 'error'>('success')
 
 /**
  * 任务列表的来源：
@@ -61,8 +66,12 @@ const badgesStateText = computed<string | null>(() => {
   if (!isReal.value) return null
   if (content.badges.status === 'failed') return '徽章定义没有取到，原因见下方提示条'
   if (isContentPending(content.badges.status)) return '正在从接口取徽章定义…'
+  if (!user.domainLoaded.achievements) return '徽章定义已取到，你的解锁记录登录后自动同步'
   return null
 })
+
+/** 完成计数的分子来自服务端记录；没取回时不拿 0 冒充「一个都没完成」 */
+const taskStatsKnown = computed(() => !isReal.value || user.domainLoaded.tasks)
 
 const totalTaskExp = computed(() => allTasks.value.reduce((sum, task) => sum + task.exp, 0))
 
@@ -73,23 +82,44 @@ function doneCount(tasks: ChallengeTask[]): number {
 const dailyDone = computed(() => doneCount(shownDailyTasks.value))
 const exploreDone = computed(() => doneCount(shownExploreTasks.value))
 
-function toggleTask(taskId: string): void {
-  if (isReal.value) {
-    /* 后端这轮没有写入接口，勾选不做任何状态变化，只说明原因 */
-    feedback.value = '这条任务来自接口，本轮只读取定义：任务完成、经验与积分发放要等阶段7 的写入接口'
+/**
+ * 勾选任务：演示模式写本机草稿；真实模式调 POST/DELETE /api/tasks/:id/complete，
+ * 经验与积分由服务端入账，重复完成会被服务端拒（409），撤销回滚的是明细快照。
+ * 反馈文案直接用后端答复，失败不吞成成功。
+ */
+async function toggleTask(taskId: string): Promise<void> {
+  const task = allTasks.value.find((item) => item.id === taskId)
+  const result = await user.toggleTask(taskId)
+  feedbackTone.value = result.ok ? 'success' : 'error'
+  if (!isReal.value) {
+    if (!result.ok || !task) return
+    feedback.value = result.completed
+      ? `已完成「${task.title}」，经验 +${task.exp}，积分 +10`
+      : `已撤销「${task.title}」，经验 -${task.exp}，积分 -10`
     return
   }
-  const task = allTasks.value.find((item) => item.id === taskId)
-  if (!task) return
-  const completed = user.toggleTask(taskId)
-  feedback.value = completed
-    ? `已完成「${task.title}」，经验 +${task.exp}，积分 +10`
-    : `已撤销「${task.title}」，经验 -${task.exp}，积分 -10`
+  feedback.value = result.message
 }
 
 function resetProgress(): void {
   user.resetProgress()
+  feedbackTone.value = 'success'
   feedback.value = '演示进度已回到初始状态'
+}
+
+/** 手动重新判定徽章：服务端按来源记录算，前端不提交任何 badgeId */
+async function evaluateBadgesNow(): Promise<void> {
+  const result = await user.evaluateBadges()
+  feedbackTone.value = result.ok ? 'success' : 'error'
+  feedback.value = result.message
+}
+
+function retryTaskRecords(): void {
+  void user.loadTasks()
+}
+
+function retryBadgeRecords(): void {
+  void user.loadAchievements()
 }
 
 /* 等级变化：完成任务跨过门槛时给出明确反馈，撤销时也说清楚 */
@@ -97,8 +127,10 @@ watch(
   () => user.level,
   (next, prev) => {
     if (next > prev) {
+      feedbackTone.value = 'success'
       feedback.value = `等级从 Lv.${prev} 升到 Lv.${next}，现在的称号是「${user.levelTitle}」`
     } else if (next < prev) {
+      feedbackTone.value = 'success'
       feedback.value = `经验减少后等级回落到 Lv.${next}，称号「${user.levelTitle}」`
     }
   }
@@ -120,32 +152,25 @@ function retryTaskDetail(): void {
   if (selectedTaskId.value) void content.openChallengeDetail(selectedTaskId.value)
 }
 
-/* 徽章：示例模式沿用 store 的本地解锁判定；真实模式只有定义，判定显示「未判定」 */
+/* 徽章：示例模式沿用 store 的本地解锁判定；真实模式用服务端判定 + 已落库解锁记录（B3） */
 const selectedBadgeId = ref<string | null>(null)
 
 const badgeStates = computed<BadgeState[]>(() => user.badgeProgress)
 
 /**
- * 弹窗内容优先用详情接口返回的那一条；
- * 详情还在请求或失败时退回列表里已有的定义，同时把详情请求的状态单独显示出来，
- * 这样「列表接口成功 + 详情接口失败」也不会变成空白弹窗。
+ * 弹窗内容优先用详情接口返回的那一条定义；
+ * 解锁状态与进度始终以 store 里的判定为准（详情接口只给定义，不给用户记录）。
  */
 const selectedBadge = computed<BadgeState | null>(() => {
   const id = selectedBadgeId.value
   if (!id) return null
-
-  if (!isReal.value) return user.badgeStateOf(id)
-
+  const state = user.badgeStateOf(id)
+  if (!isReal.value) return state
   const detail = content.badgeDetail
-  const badge = detail.id === id && detail.status === 'ready' && detail.item ? detail.item : badgeStates.value.find((state) => state.badge.id === id)?.badge
-  if (!badge) return null
-  return {
-    badge,
-    earned: false,
-    current: null,
-    target: badge.progress?.target ?? null,
-    earnedKnown: false
+  if (state && detail.id === id && detail.status === 'ready' && detail.item) {
+    return { ...state, badge: detail.item }
   }
+  return state
 })
 
 function openBadge(badgeId: string): void {
@@ -176,6 +201,7 @@ const badgeDetail = computed(() =>
 watch(isReal, (real) => {
   selectedTaskId.value = null
   selectedBadgeId.value = null
+  feedback.value = null
   if (real) {
     void content.loadChallenges({ force: true })
     void content.loadBadges({ force: true })
@@ -190,7 +216,7 @@ function reloadBadges(): void {
   void content.loadBadges({ force: true })
 }
 
-/* 首屏：真实模式在这里发第一份请求，示例模式的数据由 content store 建立时同步填好 */
+/* 首屏：真实模式在这里发第一份定义请求；用户域数据由会话恢复时的 refreshUserData 取回 */
 onMounted(() => {
   if (!isReal.value) return
   void content.loadChallenges()
@@ -208,18 +234,45 @@ onMounted(() => {
       <div class="flex items-center gap-2">
         <StatusBadge tone="brand" data-testid="challenge-completion">
           <Target :size="12" aria-hidden="true" />
-          <template v-if="user.earnedBadgeCountKnown">
+          <template v-if="taskStatsKnown">
             完成 {{ user.completedCount }}/{{ allTasks.length }}
           </template>
-          <template v-else>完成状态未接入</template>
+          <template v-else>完成记录未取到</template>
         </StatusBadge>
-        <BaseButton variant="outline" size="sm" :icon="RotateCcw" data-testid="challenge-reset" @click="resetProgress">
+        <BaseButton
+          v-if="!isReal"
+          variant="outline"
+          size="sm"
+          :icon="RotateCcw"
+          data-testid="challenge-reset"
+          @click="resetProgress"
+        >
           重置演示进度
         </BaseButton>
       </div>
     </template>
 
-    <DataSourceBar :endpoints="['/challenges', '/challenges/:id', '/badges', '/badges/:id']" scope="挑战任务与徽章定义" />
+    <DataSourceBar
+      :endpoints="['/challenges', '/challenges/:id', '/badges', '/badges/:id', '/tasks', '/achievements']"
+      scope="挑战任务与徽章定义 + 我的完成记录"
+    />
+
+    <!-- 真实模式未登录：定义公开可读，写入属于账号 -->
+    <BaseCard v-if="needsLogin" variant="flat" class="mt-5" data-testid="challenge-login-prompt">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-body-sm leading-relaxed text-ink-500">
+          任务和徽章定义可以随便看；勾选完成、经验积分入账和徽章点亮属于你的账号，登录后才能记录。
+        </p>
+        <div class="flex items-center gap-2">
+          <RouterLink to="/login">
+            <BaseButton size="sm" data-testid="challenge-login">去登录</BaseButton>
+          </RouterLink>
+          <RouterLink to="/register">
+            <BaseButton variant="outline" size="sm" data-testid="challenge-register">注册</BaseButton>
+          </RouterLink>
+        </div>
+      </div>
+    </BaseCard>
 
     <!-- 成长概览 -->
     <div class="mt-5 grid gap-4 md:grid-cols-3">
@@ -269,8 +322,13 @@ onMounted(() => {
           data-testid="challenge-local-growth-note"
           class="mt-3 rounded-inner bg-surface-sunken px-3 py-2 text-caption leading-relaxed text-ink-500"
         >
-          上面这四项是这台设备浏览器里的本地成长数值，还没有登录态与用户数据接口，
-          所以它们不是服务器上的账号进度；接口提供的是任务与徽章定义本身。
+          <template v-if="isAuthed">
+            经验与积分来自服务端账号：勾选任务即时入账，撤销按完成时的快照回滚；
+            等级门槛与称号是前端展示口径，不影响服务端数值。
+          </template>
+          <template v-else>
+            未登录：这里暂时是 0，不是你的账号进度。登录后经验、积分与完成记录都会从服务端取回。
+          </template>
         </p>
       </BaseCard>
 
@@ -282,9 +340,9 @@ onMounted(() => {
           </p>
           <ul class="mt-2 space-y-1.5 text-body-sm leading-relaxed text-ink-500">
             <template v-if="isReal">
-              <li>这一页的任务与徽章都来自接口，本轮只读取，不做完成、发放与解锁。</li>
+              <li>勾任务真的写入服务端：经验与积分即时入账，重复完成会被拒绝，撤销按快照回滚。</li>
               <li>点任务右侧的信息按钮看它从接口拿到的字段。</li>
-              <li>徽章格子显示「未判定」：接口只有解锁规则，没有用户获得记录。</li>
+              <li>徽章按你的完成记录由服务端判定，达标后自动点亮；也可以点「重新判定徽章」。</li>
             </template>
             <template v-else>
               <li>勾任务立刻加经验和积分，撤销会退回。</li>
@@ -296,19 +354,33 @@ onMounted(() => {
           </ul>
         </div>
         <DemoTag v-if="!isReal" class="mt-4" :text="DEMO_NOTICE_LOCAL_STATE" />
-        <StatusBadge v-else class="mt-4 self-start" tone="neutral" :dot="true">本轮不写入：任务完成 / 积分 / 解锁未接入</StatusBadge>
+        <StatusBadge v-else-if="isAuthed" class="mt-4 self-start" tone="success" :dot="true">任务完成与徽章解锁已接入服务端</StatusBadge>
+        <StatusBadge v-else class="mt-4 self-start" tone="neutral" :dot="true">登录后可记录任务完成与徽章</StatusBadge>
       </BaseCard>
     </div>
 
-    <!-- 完成反馈 -->
+    <!-- 完成反馈：成功用后端原文，失败同样如实显示，不吞成成功 -->
     <p
       v-if="feedback"
       data-testid="challenge-feedback"
-      class="mt-4 rounded-inner bg-success-50 px-4 py-2.5 text-body-sm font-medium text-success-600"
+      class="mt-4 rounded-inner px-4 py-2.5 text-body-sm font-medium"
+      :class="feedbackTone === 'success' ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600'"
       role="status"
     >
       {{ feedback }}
     </p>
+
+    <!-- 任务完成记录取数失败：如实说明并给重试，不拿空列表冒充「没完成过」 -->
+    <div
+      v-if="isReal && isAuthed && user.taskAsk.status === 'failed'"
+      data-testid="challenge-task-records-failed"
+      class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-inner bg-danger-50 px-4 py-2.5 text-body-sm text-danger-600"
+    >
+      <span>任务完成记录没有取到：{{ user.taskAsk.message }}</span>
+      <BaseButton variant="outline" size="sm" data-testid="challenge-task-records-retry" @click="retryTaskRecords">
+        重试
+      </BaseButton>
+    </div>
 
     <!-- 任务列表 -->
     <div class="mt-6 grid gap-4 lg:grid-cols-2">
@@ -317,7 +389,7 @@ onMounted(() => {
           title="今日日常任务"
           :description="
             isReal
-              ? challengesStateText ?? `接口返回 ${shownDailyTasks.length} 条 DAILY 定义，完成状态与奖励发放未接入`
+              ? challengesStateText ?? `接口返回 ${shownDailyTasks.length} 条 DAILY 定义${isAuthed ? '，勾选立即入账经验与积分' : '，登录后可记录完成'}`
               : `已完成 ${dailyDone}/${dailyTasks.length} 项，全部做完可得 ${dailyTasks.reduce((s, t) => s + t.exp, 0)} 经验`
           "
         />
@@ -337,8 +409,7 @@ onMounted(() => {
             v-for="task in shownDailyTasks"
             :key="task.id"
             :task="task"
-            :completed="!isReal && user.isTaskCompleted(task.id)"
-            :locked="isReal"
+            :completed="user.isTaskCompleted(task.id)"
             @toggle="toggleTask"
             @detail="openTaskDetail"
           />
@@ -372,8 +443,7 @@ onMounted(() => {
             v-for="task in shownExploreTasks"
             :key="task.id"
             :task="task"
-            :completed="!isReal && user.isTaskCompleted(task.id)"
-            :locked="isReal"
+            :completed="user.isTaskCompleted(task.id)"
             @toggle="toggleTask"
             @detail="openTaskDetail"
           />
@@ -402,9 +472,29 @@ onMounted(() => {
         :description="
           user.earnedBadgeCountKnown
             ? `已点亮 ${user.earnedBadgeCount} 个，点任意一枚看解锁条件与进度`
-            : badgesStateText ?? `接口返回 ${badgeStates.length} 条徽章定义，点任意一枚看解锁规则；用户已获得哪些没有记录接口，不判定`
+            : badgesStateText ?? `接口返回 ${badgeStates.length} 条徽章定义，点任意一枚看解锁规则`
         "
       />
+      <div v-if="isReal && isAuthed" class="mb-3 flex flex-wrap items-center gap-3">
+        <BaseButton variant="outline" size="sm" data-testid="challenge-badge-evaluate" @click="evaluateBadgesNow">
+          重新判定徽章
+        </BaseButton>
+        <span
+          v-if="user.badgeAsk.status === 'failed'"
+          data-testid="challenge-badge-records-failed"
+          class="text-caption text-danger-600"
+        >
+          {{ user.badgeAsk.message }}
+          <button
+            type="button"
+            class="underline"
+            data-testid="challenge-badge-records-retry"
+            @click="retryBadgeRecords"
+          >
+            重试
+          </button>
+        </span>
+      </div>
       <div class="mb-3">
         <ContentState
           v-if="isReal"
@@ -449,6 +539,7 @@ onMounted(() => {
     <BadgeDetailModal
       :state="selectedBadge"
       :detail="badgeDetail"
+      :real="isReal"
       @close="selectedBadgeId = null"
       @retry="retryBadgeDetail"
     />

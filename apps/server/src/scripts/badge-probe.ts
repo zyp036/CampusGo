@@ -1608,7 +1608,7 @@ async function runHttpProbe(): Promise<void> {
     observe('G4 口径：400 unknown-field 只在探针自搭的同构链里成立；真实生产请求先撞 401 守卫（见 G1），两件事不许混成一句')
   })
 
-  await check('G5', '装配期自检：写路由 19 条、/api 43 条、全站 44 条，四条徽章路由都带守卫', async (a) => {
+  await check('G5', '装配期自检：写路由 27 条、/api 60 条、全站 61 条，四条徽章路由都带守卫', async (a) => {
     const app = createApp()
     const report = describeMountedRoutes(app)
     a.ok(report.readable, '扫描器读不到 Express 路由表（内部结构可能已变化）')
@@ -1616,7 +1616,7 @@ async function runHttpProbe(): Promise<void> {
     a.ok(achievements.length === 4, `徽章前缀路由条数不对：${achievements.length}`)
     a.ok(achievements.every((route) => route.guards.includes(USER_ACTOR_GUARD_NAME)), `有徽章路由没经过守卫：${JSON.stringify(achievements.map((route) => `${route.method} ${route.path}:${route.guards.join('+')}`))}`)
     const writes = report.writeRoutes.map((route) => `${route.method} ${route.path}`).sort()
-    // 19 条逐条列出：只盯条数的话，「少一条偏好、多一条别的」也会被判成基线一致
+    // 27 条逐条列出：只盯条数的话，「少一条偏好、多一条别的」也会被判成基线一致
     const expectedWrites = [
       'POST /api/preferences/:groupKey/:optionKey',
       'PUT /api/preferences/:groupKey/:optionKey',
@@ -1628,19 +1628,27 @@ async function runHttpProbe(): Promise<void> {
       'DELETE /api/tasks/:challengeId/complete',
       'POST /api/achievements/evaluate',
       'POST /api/memories',
+      'POST /api/memories/:id/photos',
       'PATCH /api/memories/:id',
       'DELETE /api/memories/:id',
+      'DELETE /api/memories/photos/:photoId',
       'POST /api/activities/:id',
       'DELETE /api/activities/:id',
       'POST /api/auth/register',
       'POST /api/auth/login',
       'POST /api/auth/logout',
       'PATCH /api/auth/me',
-      'POST /api/auth/change-password'
+      'POST /api/auth/change-password',
+      'POST /api/partners',
+      'PATCH /api/partners/:id',
+      'POST /api/partners/:id/cancel',
+      'POST /api/plans',
+      'PATCH /api/plans/:id',
+      'DELETE /api/plans/:id'
     ].sort()
-    a.ok(writes.join(' ') === expectedWrites.join(' '), `写路由清单与 19 条基线不符（阶段4.6 起 = 偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 3 + 报名 2 + 认证 5）：${writes.join('、') || '（0 条）'}`)
-    a.ok(report.apiRouteCount === 43, `/api 之下路由总数变成 ${report.apiRouteCount}（基线 43 = 公开只读 8 + 偏好 6 + 收藏 4 + 任务 4 + 徽章 4 + 记录 5 + 报名 4 + 积分只读 2 + 认证 6）`)
-    a.ok(report.routes.length === 44, `全站路由总数变成 ${report.routes.length}（基线 44 = /api 43 + 根路径 1）`)
+    a.ok(writes.join(' ') === expectedWrites.join(' '), `写路由清单与 27 条基线不符（本刀后 = 偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 5（含图片两条）+ 报名 2 + 认证 5 + 主办 3 + 规划 3）：${writes.join('、') || '（0 条）'}`)
+    a.ok(report.apiRouteCount === 60, `/api 之下路由总数变成 ${report.apiRouteCount}（基线 60 = 公开只读 10（含天气 2）+ 偏好 6 + 收藏 4 + 任务 4 + 徽章 4 + 记录 9（五条记录本体 + 四条图片）+ 报名 4 + 积分只读 2 + 认证 6 + 搭子 6 + 规划 5）`)
+    a.ok(report.routes.length === 61, `全站路由总数变成 ${report.routes.length}（基线 61 = /api 60 + 根路径 1）`)
     a.ok(report.unguardedWriteRoutes.length === 0, `有写接口漏挂守卫：${JSON.stringify(report.unguardedWriteRoutes)}`)
     const captured = await captureError(() => assertUserWriteBoundary(app))
     a.ok(captured.status === undefined, `装配期自检抛错：${JSON.stringify(captured)}`)

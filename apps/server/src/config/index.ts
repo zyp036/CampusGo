@@ -147,6 +147,13 @@ function resolveLogDir(raw: string | undefined, serverDir: string): string {
   return path.isAbsolute(text) ? text : path.resolve(serverDir, text)
 }
 
+/** 图片存储目录：与日志目录同一套解析规则，相对路径按 apps/server 展开 */
+function resolveStorageDir(raw: string | undefined, serverDir: string): string {
+  const text = (raw ?? '').trim()
+  if (!text) return path.join(serverDir, 'storage', 'memory-photos')
+  return path.isAbsolute(text) ? text : path.resolve(serverDir, text)
+}
+
 const nodeEnv = process.env.NODE_ENV ?? 'development'
 const isProduction = nodeEnv === 'production'
 
@@ -200,6 +207,68 @@ export const config = {
    * 专属域名，由和风提供。
    */
   qweatherApiHost: process.env.QWEATHER_API_HOST?.trim() ?? '',
+  /**
+   * AI 规划能力开关（百炼 API 接入）。
+   * 默认 false。AI_ENABLED=true 时才会调用百炼 API；
+   * 任何 AI 服务在发起外部调用前必须先检查它。
+   */
+  aiEnabled: resolveBoolean(process.env.AI_ENABLED, false, 'AI_ENABLED', warnings),
+  /**
+   * AI 服务提供商：目前只支持 'bailian'（阿里云百炼 OpenAI 兼容协议）。
+   * 预留 Provider 抽象，未来可更换模型而不改业务代码。
+   */
+  aiProvider: (process.env.AI_PROVIDER?.trim() || 'bailian') as 'bailian',
+  /**
+   * 百炼 API Key。只从 .env 读取，绝不写死在源码里。
+   * 日志中不打印此值（见 middlewares/request-logger.ts 脱敏规则）。
+   */
+  aiApiKey: process.env.AI_API_KEY?.trim() ?? '',
+  /**
+   * 百炼 API Base URL（OpenAI 兼容端点）。
+   */
+  aiBaseUrl: process.env.AI_BASE_URL?.trim() || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  /**
+   * 使用的模型降级链（逗号分隔，按优先级从高到低）。
+   * 当前模型额度耗尽时自动切换到下一个，全部用完才降级到规则引擎。
+   * 默认 ['qwen4-max']。
+   */
+  aiModels: (process.env.AI_MODELS?.split(',').map(s => s.trim()).filter(Boolean) || ['qwen4-max']),
+  /**
+   * 当前首选模型（降级链的第一个）。
+   * 保留此字段用于向后兼容和状态展示。
+   */
+  aiModel: (process.env.AI_MODELS?.split(',').map(s => s.trim()).filter(Boolean) || ['qwen4-max'])[0],
+  /**
+   * AI 请求超时时间（毫秒）。超时后降级到规则引擎。
+   */
+  aiTimeoutMs: resolvePositiveInt(
+    process.env.AI_TIMEOUT_MS,
+    30000,
+    'AI_TIMEOUT_MS',
+    { min: 5000, max: 120000 },
+    warnings
+  ),
+  /**
+   * 单次最大输出 Token 数（控制成本）。
+   */
+  aiMaxOutputTokens: resolvePositiveInt(
+    process.env.AI_MAX_OUTPUT_TOKENS,
+    1500,
+    'AI_MAX_OUTPUT_TOKENS',
+    { min: 100, max: 8000 },
+    warnings
+  ),
+  /**
+   * 每个用户每天最大 AI 调用次数（项目侧费用保护）。
+   * 与百炼控制台的「用完即停」开关是两道独立防线。
+   */
+  aiDailyLimit: resolvePositiveInt(
+    process.env.AI_DAILY_LIMIT,
+    5,
+    'AI_DAILY_LIMIT',
+    { min: 1, max: 100 },
+    warnings
+  ),
   log: {
     /** 开发默认 debug（终端要看全），生产默认 info（业务请求 + 告警 + 错误） */
     level: resolveLogLevel(process.env.LOG_LEVEL, isProduction ? 'info' : 'debug', warnings),
@@ -230,6 +299,30 @@ export const config = {
     quietPaths: resolveQuietPaths(process.env.LOG_QUIET_PATHS)
   },
   bodyLimit,
+  /**
+   * 生活记忆图片存储（阶段「传图片功能」）。
+   *
+   * 图片本体落在服务器磁盘的 `<dir>/<用户id>/<照片id>.<扩展名>`，库里只存元信息。
+   * 三条上限都是硬约束，不是提示：单文件超限 413、每条记录超限 409、
+   * 类型不在白名单内 415（扩展名由 magic bytes 决定，不接受客户端声明的 Content-Type）。
+   */
+  memoryPhoto: {
+    dir: resolveStorageDir(process.env.PHOTO_STORAGE_DIR, appDir),
+    maxBytesPerPhoto: resolvePositiveInt(
+      process.env.PHOTO_MAX_BYTES,
+      5 * 1024 * 1024,
+      'PHOTO_MAX_BYTES',
+      { min: 1024, max: 64 * 1024 * 1024 },
+      warnings
+    ),
+    maxPhotosPerMemory: resolvePositiveInt(
+      process.env.PHOTO_MAX_PER_MEMORY,
+      9,
+      'PHOTO_MAX_PER_MEMORY',
+      { min: 1, max: 99 },
+      warnings
+    )
+  },
   rateLimit: {
     enabled: resolveBoolean(process.env.RATE_LIMIT_ENABLED, true, 'RATE_LIMIT_ENABLED', warnings),
     windowMs: rateLimitWindowMs,

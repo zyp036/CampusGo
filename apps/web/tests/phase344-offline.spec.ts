@@ -104,7 +104,7 @@ test.describe('阶段3.4.4 后端关闭', () => {
 
     /* 再回规划页：同一条件重新派发一次（这是不点按钮的自动恢复机会），
        计数在同一次会话里如实累加，而不是假装第一次 */
-    await page.getByRole('link', { name: /AI生活规划/ }).first().click()
+    await page.getByRole('link', { name: /生活规划/ }).first().click()
     await expect(page).toHaveURL(/\/plan$/)
     await expect(page.getByTestId('content-failed')).toHaveCount(1)
     await expect(page.getByTestId('content-attempts')).toContainText('已经发过 3 次', { timeout: 10_000 })

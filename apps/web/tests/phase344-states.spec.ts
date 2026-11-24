@@ -95,7 +95,9 @@ test.describe('阶段3.4.4 请求状态（真实接口）', () => {
     await expect(page.getByTestId('challenge-daily-empty')).toBeHidden()
     await expect(page.getByTestId('challenge-badge-empty')).toBeHidden()
 
-    await expect(page.getByTestId('challenge-daily-empty')).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.locator('[data-testid="challenge-task"], [data-testid="challenge-daily-empty"]').first()
+    ).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('challenge-daily-loading')).toBeHidden()
   })
 
@@ -255,9 +257,11 @@ test.describe('阶段3.4.4 请求状态（真实接口）', () => {
     expect(sent).toHaveLength(1)
 
     await page.getByRole('link', { name: /趣味挑战/ }).first().click()
-    await expect(page.getByTestId('challenge-daily-empty')).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.locator('[data-testid="challenge-task"], [data-testid="challenge-daily-empty"]').first()
+    ).toBeVisible({ timeout: 15_000 })
 
-    await page.getByRole('link', { name: /AI生活规划/ }).first().click()
+    await page.getByRole('link', { name: /生活规划/ }).first().click()
     await expect(page.getByTestId('places-count')).toContainText(`接口返回共 ${total} 个地点`, {
       timeout: 15_000
     })

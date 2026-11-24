@@ -440,6 +440,35 @@ export interface MemoryRemoveResultDto {
   dateKey: string
 }
 
+/* ============================ 时光记录图片（4 条） ============================ */
+
+/**
+ * GET /api/memories/:id/photos 的 data 元素（`services/memory-photo.ts:160` 的 DTO 镜像）。
+ * 字段顺序与后端一致：`fileUrl` 是同源路径，需要登录态才能取到字节，界面直接当 `<img>` src 用。
+ */
+export interface UserMemoryPhotoDto {
+  id: string
+  memoryId: string
+  fileName: string
+  mimeType: string
+  byteSize: number
+  sortOrder: number
+  fileUrl: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** GET /api/memories/:id/photos 的 data：`{ items: [...] }`，与列表响应同形 */
+export interface MemoryPhotoListDto {
+  items: UserMemoryPhotoDto[]
+}
+
+/** DELETE /api/memories/photos/:photoId 的 data：回执，与记录删除同形 */
+export interface MemoryPhotoRemoveResultDto {
+  id: string
+  memoryId: string
+}
+
 /* ============================ 活动报名（4 条） ============================ */
 
 /** 派生状态：库里没有这一列，每次真实计数现算（`user-activity.ts:96`） */
@@ -456,8 +485,8 @@ export interface ActivityDisplayDto {
   location: string
   startsAt: string | null
   hostDisplayName: string
-  /** `OPEN` / `CLOSED` 是库里那列的原文 */
-  activityStatus: 'OPEN' | 'CLOSED'
+  /** `OPEN` / `CLOSED` / `CANCELLED` 是库里那列的原文（CANCELLED 为阶段9 新增） */
+  activityStatus: 'OPEN' | 'CLOSED' | 'CANCELLED'
   capacity: number
   joined: number
   remaining: number
@@ -497,6 +526,125 @@ export interface ActivityListQuery {
   pageSize?: number
   order?: ActivitySortOrder
   seat?: ActivitySeatFilter
+}
+
+/* ====================== 兴趣搭子发现/主办（6 条，阶段9） ====================== */
+
+/** 活动状态筛选：all 全部、open 招募中、closed 已结束、cancelled 已取消 */
+export type PartnerStatusFilter = 'all' | 'open' | 'closed' | 'cancelled'
+
+/** 对外十八项：公开发现与主办人管理共用一份。内部 hostUserId 永不出现 */
+export interface PartnerActivityDto {
+  activityId: string
+  title: string
+  category: string
+  description: string
+  location: string
+  dateLabel: string
+  startsAt: string | null
+  capacity: number
+  joined: number
+  remaining: number
+  seatStatus: ActivitySeatStatus
+  activityStatus: 'OPEN' | 'CLOSED' | 'CANCELLED'
+  interestTags: string[]
+  coverGradient: string
+  hostDisplayName: string
+  hostIdentity: string | null
+  /** 主办人公开用户码（CG-2026-xxxx）；无真实主办人时为 null */
+  hostUserCode: string | null
+  createdAt: string
+}
+
+export interface PartnerActivityListDto {
+  items: PartnerActivityDto[]
+  pagination: PageMeta
+}
+
+/** GET /api/partners 公开列表筛选 */
+export interface PartnerListQuery {
+  page?: number
+  pageSize?: number
+  order?: ActivitySortOrder
+  seat?: ActivitySeatFilter
+  status?: PartnerStatusFilter
+  category?: string
+  keyword?: string
+}
+
+/** GET /api/partners/mine 我主办的（归属由守卫钉死，不收 category/keyword） */
+export interface MyHostedQuery {
+  page?: number
+  pageSize?: number
+  order?: ActivitySortOrder
+  seat?: ActivitySeatFilter
+  status?: PartnerStatusFilter
+}
+
+/** POST /api/partners 发布：前六项必填，startsAt/interestTags/coverGradient 可省 */
+export interface PartnerPublishPayload {
+  title: string
+  category: string
+  description: string
+  location: string
+  dateLabel: string
+  capacity: number
+  startsAt?: string
+  interestTags?: string[]
+  coverGradient?: MemoryCoverKey
+}
+
+/** PATCH /api/partners/:id 编辑：全部可选，只改提交过的列；startsAt 空串 = 清除真实时刻 */
+export type PartnerUpdatePayload = Partial<PartnerPublishPayload>
+
+/* ====================== 我的规划（5 条，阶段9 A3） ====================== */
+
+export type PlanSortOrder = 'desc' | 'asc'
+
+/**
+ * 一条保存的规划（`services/user-plan.ts` USER_PLAN_DTO_KEYS 六键，userId 永不出现）。
+ * `conditions` 是表单选择表（组键 → 选项 id 数组）；`result` 是前端规则引擎算出的那份
+ * DemoPlan，后端原样存原样还，不重算、不冒充 AI。
+ */
+export interface UserPlanDto {
+  planId: string
+  title: string
+  conditions: Record<string, string[]>
+  result: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PlanListDto {
+  items: UserPlanDto[]
+  pagination: PageMeta
+}
+
+export interface PlanListQuery {
+  page?: number
+  pageSize?: number
+  order?: PlanSortOrder
+}
+
+/** POST /api/plans：标题 + 选择表 + 规划结果三项必填 */
+export interface PlanSavePayload {
+  title: string
+  conditions: Record<string, string[]>
+  result: Record<string, unknown>
+}
+
+/** PATCH /api/plans/:id：全部可选，只改提交过的列；expectedUpdatedAt 不符则 409 */
+export interface PlanUpdatePayload {
+  title?: string
+  conditions?: Record<string, string[]>
+  result?: Record<string, unknown>
+  expectedUpdatedAt?: string
+}
+
+/** DELETE /api/plans/:id 的 data：整行已删除，回 planId 与 title 作回执 */
+export interface PlanRemoveResultDto {
+  planId: string
+  title: string
 }
 
 /* ====================== 经验/积分一致性（2 条） ====================== */
@@ -604,6 +752,14 @@ export interface LoginResultDto {
   }
 }
 
+/** POST /api/auth/demo-account 的 data：生成的体验账号凭据 + 会话 */
+export interface DemoAccountResultDto {
+  user: UserProfileDto & { password: string }
+  session: {
+    expiresAt: string
+  }
+}
+
 /** POST /api/auth/register 的请求体 */
 export interface RegisterPayload {
   nickname: string
@@ -688,3 +844,114 @@ export interface ForecastData {
   fetchTime: string
 }
 
+/* ============================ 阶段9：意见反馈 ============================ */
+
+/** 反馈分类（与后端 FEEDBACK_CATEGORIES 白名单一致） */
+export type FeedbackCategory = 'bug' | 'feature' | 'experience' | 'other'
+
+/** 提交反馈的请求体 */
+export interface FeedbackCreatePayload {
+  category: FeedbackCategory
+  content: string
+  contact?: string | null
+}
+
+/** 单条反馈 DTO（后端返回） */
+export interface UserFeedbackDto {
+  id: string
+  category: FeedbackCategory
+  content: string
+  contact: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** 反馈列表响应 */
+export interface FeedbackListDto {
+  items: UserFeedbackDto[]
+}
+
+/* ---- AI 智能规划（阶段6+ 新增） ---- */
+
+/** AI 规划请求条件（与后端 AiPlanInput 一致） */
+export interface AiPlanRequest {
+  time?: string
+  budget?: string
+  mood?: string
+  interests?: string[]
+  company?: string
+  types?: string[]
+  customRequest?: string
+  preferredPlace?: string
+}
+
+/** AI 规划时间线步骤 */
+export interface AiPlanStepDto {
+  startTime: string
+  endTime: string
+  activity: string
+  location: string
+}
+
+/** AI 规划结果（后端 parsePlanResponse 校验后的形状） */
+export interface AiPlanResultDto {
+  title: string
+  summary: string
+  steps: AiPlanStepDto[]
+  totalMinutes: number
+  totalBudget: number
+  reasons: string[]
+  tips: string[]
+  suggestions: string[]
+  weatherAdvice?: string
+}
+
+/** AI 规划生成成功响应 */
+export interface AiPlanSuccessData {
+  source: 'ai'
+  plan: AiPlanResultDto
+  tokens: { input: number; output: number }
+  latencyMs: number
+}
+
+/** AI 规划降级到规则引擎的响应 */
+export interface AiPlanFallbackData {
+  source: 'rule'
+  plan: AiPlanResultDto
+  fallback: true
+  fallbackReason: string
+  latencyMs?: number
+}
+
+/** 规则引擎直接生成的响应（AI 未开启时） */
+export interface RulePlanData {
+  source: 'rule'
+  plan: AiPlanResultDto
+  fallback: true
+  fallbackReason: string
+}
+
+export type AiPlanResponseData = AiPlanSuccessData | AiPlanFallbackData | RulePlanData
+
+/** AI 配额状态 */
+export interface AiQuotaStatusDto {
+  dailyLimit: number
+  usedToday: number
+  remainingToday: number
+  hasQuota: boolean
+  enabled: boolean
+}
+
+/** AI 服务状态（公开接口返回） */
+export interface AiServiceStatusDto {
+  enabled: boolean
+  provider: string
+  model: string
+  configured: boolean
+}
+
+/** 配额查询响应 */
+export interface AiQuotaResponseData {
+  quota: AiQuotaStatusDto
+  status: AiServiceStatusDto
+}

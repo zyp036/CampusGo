@@ -72,9 +72,8 @@ import {
  * - 不新建活动、不改活动任何列：写侧只有 `cg_activity_participant` 这一张表；
  * - 不碰任何前端文件（接入与 localStorage 退场属于阶段4.4.6）。
  *
- * 四、与 4.3.2—4.3.6 一样，**本轮不开放可用的 HTTP 接口**：正式认证（4.6）完成前
- * `/api/activities` 下每条请求都在守卫处得到 501 `auth-not-implemented`
- * （`middlewares/request-identity.ts:98-100`，GET 也一样），
+ * 四、HTTP 接口随认证（4.6）落地而开放：`/api/activities` 下每条请求先过会话守卫，
+ * 未认证一律 401 `identity-missing`（GET 也一样），
  * 这些函数只被守卫之后的控制器、以及注入假存储的探针调用。
  */
 
@@ -172,10 +171,18 @@ function seatFullError(activityId: string, capacity: number): ApiError {
   })
 }
 
-/** 活动已结束：`status` 只有 OPEN / CLOSED 两个取值，语义是「还在收人 / 已结束」（`schema.prisma:59-62,269`） */
+/** 活动已结束：`status` 三态 OPEN / CLOSED / CANCELLED（`schema.prisma:60-67`），这里只处理 CLOSED */
 function activityClosedError(activityId: string): ApiError {
   return new ApiError(409, 'CONFLICT', '这个活动已经结束了，不能再报名', {
     reason: 'activity-closed',
+    id: activityId
+  })
+}
+
+/** 活动被主办人取消（阶段9 新增 CANCELLED）：保留行供已报名用户查看，但不再收人 */
+function activityCancelledError(activityId: string): ApiError {
+  return new ApiError(409, 'CONFLICT', '这个活动已被主办人取消，不能再报名', {
+    reason: 'activity-cancelled',
     id: activityId
   })
 }
@@ -350,8 +357,8 @@ export interface ActivityDisplayDto {
   location: string
   startsAt: string | null
   hostDisplayName: string
-  /** `OPEN` / `CLOSED` 是库里那列的原文（`schema.prisma:59-62,269`） */
-  activityStatus: 'OPEN' | 'CLOSED'
+  /** `OPEN` / `CLOSED` / `CANCELLED` 是库里那列的原文（`schema.prisma:60-67`；CANCELLED 为阶段9 新增） */
+  activityStatus: 'OPEN' | 'CLOSED' | 'CANCELLED'
   capacity: number
   joined: number
   remaining: number
@@ -600,8 +607,8 @@ function columnValue(row: Record<string, unknown>, ...names: string[]): ColumnVa
  * - 大整数列：MySQL `INT` 经驱动回 `number` 或 `bigint`，两种都收成 `number`；
  * - `starts_at`：只认 `Date`，其余形态一律 `null`（`schema.prisma:263` 允许它为空，
  *   这里不拿字符串或 0 假装一个时刻）；
- * - `status`：只认 `CLOSED`，其余按库里的另一个取值 `OPEN`（`ActivityStatus` 只有这两个成员，
- *   `schema.prisma:59-62`）。
+ * - `status`：认 `CLOSED` 与 `CANCELLED`（阶段9 新增），其余按 `OPEN`
+ *   （`ActivityStatus` 三成员，`schema.prisma:60-67`；未知形态的兜底方向沿用原实现）。
  */
 function toActivityRow(row: unknown): ActivityRow | null {
   if (!row || typeof row !== 'object') return null
@@ -610,6 +617,7 @@ function toActivityRow(row: unknown): ActivityRow | null {
   if (typeof id !== 'string' || id.length === 0) return null
   const startsAt = columnValue(raw, 'startsAt', 'starts_at')
   const capacity = Number(columnValue(raw, 'capacity') ?? 0)
+  const statusRaw = columnValue(raw, 'status')
   return {
     id,
     title: String(columnValue(raw, 'title') ?? ''),
@@ -617,7 +625,7 @@ function toActivityRow(row: unknown): ActivityRow | null {
     dateLabel: String(columnValue(raw, 'dateLabel', 'date_label') ?? ''),
     location: String(columnValue(raw, 'location') ?? ''),
     capacity,
-    status: columnValue(raw, 'status') === 'CLOSED' ? 'CLOSED' : 'OPEN',
+    status: statusRaw === 'CLOSED' ? 'CLOSED' : statusRaw === 'CANCELLED' ? 'CANCELLED' : 'OPEN',
     startsAt: startsAt instanceof Date ? startsAt : null,
     hostDisplayName: String(columnValue(raw, 'hostDisplayName', 'host_display_name') ?? '')
   }
@@ -784,6 +792,7 @@ export async function signupActivity(
       const store = deps.store ?? txParticipantStore(tx)
 
       const activity = await activities.lockForSignup({ tx, activityId: id })
+      if (activity.status === 'CANCELLED') throw activityCancelledError(id)
       if (activity.status !== 'OPEN') throw activityClosedError(id)
 
       const existing = await store.findFirst({ where: ownedByWhere(subject, { activityId: id }) })

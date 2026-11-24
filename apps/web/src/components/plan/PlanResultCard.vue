@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { Check, ChevronRight, Clock, Compass, Lightbulb, ListChecks, MapPin, Wallet } from '@lucide/vue'
+import { Check, ChevronRight, Clock, Compass, Lightbulb, ListChecks, MapPin, Save, Wallet } from '@lucide/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import DemoTag from '@/components/ui/DemoTag.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { DEMO_NOTICE_AI } from '@/data/demoNotice'
+import { DEMO_NOTICE_PLAN_RULE } from '@/data/demoNotice'
 import type { DemoPlan } from '@/types/models'
 
-/** 编排结果卡。数据全部来自 utils/demoPlanner 的规则匹配，不是接口返回 */
-defineProps<{ plan: DemoPlan; candidateCount: number }>()
+/** 编排结果卡。数据全部来自 utils/demoPlanner 的规则匹配，不是接口返回，也不是 AI 生成 */
+withDefaults(defineProps<{ plan: DemoPlan; candidateCount: number; saving?: boolean; saved?: boolean }>(), {
+  saving: false,
+  saved: false
+})
+
+const emit = defineEmits<{ save: [] }>()
 </script>
 
 <template>
@@ -142,6 +147,23 @@ defineProps<{ plan: DemoPlan; candidateCount: number }>()
       </ul>
     </div>
 
-    <DemoTag class="mt-4" :text="DEMO_NOTICE_AI + '；地点与价格均为示例口径，未逐条核实'" />
+    <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line/70 pt-3.5">
+      <BaseButton
+        :variant="saved ? 'outline' : 'gradient'"
+        size="sm"
+        :icon="saved ? Check : Save"
+        :loading="saving"
+        :disabled="saving"
+        data-testid="plan-save"
+        @click="emit('save')"
+      >
+        {{ saved ? '已保存这份规划' : saving ? '正在保存…' : '保存这份规划' }}
+      </BaseButton>
+      <span class="text-caption text-ink-400">
+        {{ saved ? '可在下方「我的规划」里载入、重命名或删除' : '保存后可在「我的规划」里随时载入' }}
+      </span>
+    </div>
+
+    <DemoTag class="mt-4" :text="DEMO_NOTICE_PLAN_RULE" />
   </div>
 </template>

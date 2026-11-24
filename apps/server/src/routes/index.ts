@@ -7,11 +7,15 @@ import challengesRouter from './challenges.routes.js'
 import favoritesRouter from './favorites.routes.js'
 import healthRouter from './health.routes.js'
 import memoriesRouter from './memories.routes.js'
+import partnersRouter from './partners.routes.js'
 import placesRouter from './places.routes.js'
+import plansRouter from './plans.routes.js'
 import pointsRouter from './points.routes.js'
 import preferencesRouter from './preferences.routes.js'
 import tasksRouter from './tasks.routes.js'
+import feedbackRouter from './feedback.routes.js'
 import weatherRouter from './weather.routes.js'
+import aiRouter from './ai.routes.js'
 import { mountUserScopedRouter } from '../middlewares/request-identity.js'
 
 /**
@@ -44,16 +48,20 @@ import { mountUserScopedRouter } from '../middlewares/request-identity.js'
  * - /api/points                用户经验与积分的**一致性读取**，两条（都是 GET，一条都不写）（阶段4.3.8）
  *   只把 `cg_user.total_exp`/`points` 与 `cg_user_challenge` 的快照之和放在同一个事务里比一次；
  *   「检测出的异常数据不得批量修复」这条指令决定了这里没有写方法，全站对账也只留在命令行。
- *   以上七个模块走的都不是 `apiRouter.use()`，而是下面的 `mountUserScopedRouter()`：
- *   守卫先压在前缀上，正式认证完成前它们一律 501，认证落地后只换守卫实现、这里不动。
+ * - /api/plans                 用户「我的规划」，五条（GET 两条 + POST/PATCH/DELETE）（阶段9 最终收尾 A3）
+ *   规划由前端规则引擎算出（无模型调用），本模块只保存与取回；新表 cg_user_plan，不动已验收表。
+ *   以上八个模块走的都不是 `apiRouter.use()`，而是下面的 `mountUserScopedRouter()`：
+ *   守卫先压在前缀上；认证（阶段4.6）落地后守卫只认会话 cookie，未登录一律 401。
+ * - /api/partners              兴趣搭子：公开发现 + 主办人管理，六条（GET 三条 + POST 两条 + PATCH 一条）（阶段9）
+ *   公开与需登录混在同一前缀，做法与 /api/auth 相同（需登录的四条在路由文件内手动挂守卫）。
  *
  * 后续每加一个业务模块，就在这里登记它的一级前缀。
  *
  * 阶段4.3.1 的口径：涉及用户数据的模块**不能**直接 `apiRouter.use(prefix, router)`，
  * 必须走 `middlewares/request-identity.ts` 的 `mountUserScopedRouter()`——
  * 它会先把身份守卫压在该前缀上；漏掉守卫的写接口会让 `createApp()` 启动自检直接抛错。
- * 这张表里现在有七个用户级模块（偏好、收藏、任务完成、徽章解锁、时光记录、活动报名、一致性读取），
- * 走的都是那条规定；公开的只读模块仍然只有上面四条。
+ * 这张表里现在有八个整段守卫的用户级模块（偏好、收藏、任务完成、徽章解锁、时光记录、活动报名、一致性读取、我的规划），
+ * 走的都是那条规定；公开模块是上面四条只读 + 天气 + 认证（混合）+ 兴趣搭子（混合）。
  */
 const apiRouter = Router()
 
@@ -76,6 +84,14 @@ apiRouter.use('/weather', weatherRouter)
  * 不走 mountUserScopedRouter：整个模块混合了公开与需登录的接口。
  */
 apiRouter.use('/auth', authRouter)
+
+/**
+ * 兴趣搭子（阶段9，最终收尾提前落地）：公开发现 + 主办人管理。
+ * 与 auth 同一做法——前缀下混着公开接口（GET / 与 GET /:id），不走 mountUserScopedRouter；
+ * 需登录的四条（GET /mine、POST /、PATCH /:id、POST /:id/cancel）在 partners.routes.ts 内部手动挂守卫。
+ * 「我的报名 / 报名 / 取消报名」还在 /activities（4.3.7，整段守卫），两个前缀各管各的。
+ */
+apiRouter.use('/partners', partnersRouter)
 
 /** 用户偏好：先守卫、后路由，顺序由 mountUserScopedRouter 内部保证 */
 mountUserScopedRouter(apiRouter, '/preferences', preferencesRouter)
@@ -101,6 +117,13 @@ mountUserScopedRouter(apiRouter, '/achievements', achievementsRouter)
 mountUserScopedRouter(apiRouter, '/memories', memoriesRouter)
 
 /**
+ * 用户「我的规划」（阶段9 最终收尾 A3）：同样先守卫、后路由，五条里三条是写方法。
+ * 规划由前端规则引擎算出（无模型调用），本模块只保存与取回；
+ * 表 cg_user_plan 是本轮新增（迁移 20261123130000），不动任何已验收表。
+ */
+mountUserScopedRouter(apiRouter, '/plans', plansRouter)
+
+/**
  * 用户活动报名（阶段4.3.7）：同样先守卫、后路由，四条里两条是写方法（POST / DELETE）。
  * 前缀用 `/activities`（我的报名，全部要身份），公开的活动发现仍留给 `routes/README.md`
  * 第四节给阶段9 预留的 `/partners`——两者挂在一个前缀上会让公开列表也吃到用户级守卫。
@@ -115,5 +138,20 @@ mountUserScopedRouter(apiRouter, '/activities', activitiesRouter)
  * 全站对账（`reconcileUserCache`）刻意**不挂任何接口**，只给 `scripts/reconcile-user-cache.ts` 用。
  */
 mountUserScopedRouter(apiRouter, '/points', pointsRouter)
+
+/**
+ * 用户意见反馈（阶段9 最终收尾）：同样先守卫、后路由，两条里一条是写方法（POST）。
+ * 前缀 `/feedback` 是 `routes/README.md` 给个人数据模块预留的位置。
+ */
+mountUserScopedRouter(apiRouter, '/feedback', feedbackRouter)
+
+/**
+ * AI 智能规划（阶段6+）：混合公开与需登录的接口，与 auth / partners 同一做法。
+ * - GET  /api/ai/status   公开：前端判断是否显示 AI 入口
+ * - POST /api/ai/plan     需登录：生成 AI 规划（失败时降级到规则引擎）
+ * - GET  /api/ai/quota    需登录：查询用户今日配额
+ * 需登录的两条在 ai.routes.ts 内部手动挂 requireTrustedUserActor 守卫。
+ */
+apiRouter.use('/ai', aiRouter)
 
 export default apiRouter

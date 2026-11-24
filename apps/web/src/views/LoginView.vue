@@ -57,7 +57,7 @@ async function handleLogin(): Promise<void> {
           v-model="userCode"
           type="text"
           autocomplete="username"
-          placeholder="CG-2026-0001"
+          placeholder="CG-2026-00001"
           class="mt-1 block w-full rounded-control border border-line bg-surface-card px-3 py-2.5 text-body-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           :disabled="loading"
         />

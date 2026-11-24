@@ -33,7 +33,7 @@ import {
  * 5) 只在开发口径跑：这一支要用 `injected-test` 身份，生产口径下 `--db` 拒绝执行。
  *
  * 清理口径：先按 `user_id` 删 `cg_user_challenge`，再按主键删标记任务与标记用户，
- * 最后复核 11 张表行数回到开跑前基线。标记用户被删掉后，它们的缓存行一并消失，
+ * 最后复核 15 张表行数回到开跑前基线。标记用户被删掉后，它们的缓存行一并消失，
  * 所以「缓存被本轮改过」不会污染任何既有数据。
  */
 
@@ -54,7 +54,13 @@ const ALL_TABLES = [
   'cg_memory',
   'cg_partner_activity',
   'cg_activity_participant',
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback。
+  // 收尾复核要盖住全部 15 张业务表：少列一张，等于默认它可以被本轮写脏。
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 
 /** 标记用户的初始缓存：430 经验 / 120 积分抄已验收的前端初始值（`apps/web/src/stores/user.ts:23-24`），
@@ -630,7 +636,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
     const deletedRows = await prisma.userChallenge.deleteMany({ where: { userId: { in: createdUserIds } } })
     const deletedChallenges = await prisma.challenge.deleteMany({ where: { id: { in: createdChallengeIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
-    await h.check('DB13', '清理：只删本轮标记行，全库 11 张表回到开跑前基线', async (a) => {
+    await h.check('DB13', '清理：只删本轮标记行，全库 15 张表回到开跑前基线', async (a) => {
       a.ok(deletedUsers.count === createdUserIds.length, `标记用户删除数不对：${deletedUsers.count}/${createdUserIds.length}`)
       a.ok(deletedChallenges.count === createdChallengeIds.length, `标记任务删除数不对：${deletedChallenges.count}/${createdChallengeIds.length}`)
       a.ok((await count(USER_TABLE, `\`user_code\` LIKE '${TEST_CODE_PREFIX}%'`)) === 0, '清理后仍有标记用户')

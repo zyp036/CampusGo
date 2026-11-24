@@ -1400,8 +1400,16 @@ async function runUnitProbe(): Promise<void> {
     const authDeps = sources.filter((s) => /jsonwebtoken|passport|express-session|cookie-parser|next-auth/.test(s.code))
     a.ok(authDeps.length === 0, `出现认证依赖：${authDeps.map((d) => d.name).join('、')}`)
     const importers = sources.filter((s) => /from '\.\.\/services\/user-activity\.js'/.test(s.code)).map((s) => s.name).sort()
+    // 阶段9 起 partners 的控制器与校验层也复用名额常量与类型（仍是控制器 / 校验层，不是别的层）
+    const allowedImporters = [
+      'controllers/activities.controller.ts',
+      'controllers/partners.controller.ts',
+      'validation/activities.ts',
+      'validation/partners.ts'
+    ]
     a.ok(
-      importers.length === 2 && importers[0].endsWith('controllers/activities.controller.ts') && importers[1].endsWith('validation/activities.ts'),
+      importers.length === allowedImporters.length &&
+        importers.every((name, index) => name.endsWith(allowedImporters[index])),
       `引用报名 Service 的文件不止控制器与校验层：${importers.join('、')}`
     )
     const pkg = JSON.parse(fs.readFileSync(path.join(serverDir, 'package.json'), 'utf8')) as {

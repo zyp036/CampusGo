@@ -10,7 +10,7 @@ import { expect, test } from './fixtures'
 
 const ROUTES = ['/home', '/plan', '/challenge', '/memories', '/partners', '/profile']
 
-const SIDEBAR_LABELS = ['首页', 'AI生活规划', '趣味挑战', '生活记忆', '兴趣搭子', '个人中心']
+const SIDEBAR_LABELS = ['首页', '生活规划', '趣味挑战', '生活记忆', '兴趣搭子', '个人中心']
 const MOBILE_BAR_LABELS = ['首页', '规划', '挑战', '搭子', '我的']
 
 function viewportWidth(): number {

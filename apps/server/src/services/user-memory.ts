@@ -68,9 +68,8 @@ import {
  * - 不删行以外的一切「清理」：`removeMemory` 是物理删除，理由见那个函数上方的注释；
  * - 不碰任何前端文件（接入与 localStorage 退场属于阶段4.4.5）。
  *
- * 四、与 4.3.2—4.3.5 一样，**本轮不开放可用的 HTTP 接口**：正式认证（4.6）完成前
- * `/api/memories` 下每条请求都在守卫处得到 501 `auth-not-implemented`
- * （`middlewares/request-identity.ts:98-100`，GET 也一样），
+ * 四、HTTP 接口随认证（4.6）落地而开放：`/api/memories` 下每条请求先过会话守卫，
+ * 未认证一律 401 `identity-missing`（GET 也一样），
  * 这些函数只被守卫之后的控制器、以及注入假存储的探针调用。
  */
 

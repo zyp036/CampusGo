@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import { registerUser, loginUser, logoutSession, changePassword, SESSION_COOKIE_NAME, SESSION_TTL_MS } from '../services/auth.js'
+import { registerUser, loginUser, logoutSession, changePassword, createDemoAccount, SESSION_COOKIE_NAME, SESSION_TTL_MS } from '../services/auth.js'
 import { getTrustedUserActor } from '../middlewares/request-identity.js'
 import { parseRegisterBody, parseLoginBody, parseChangePasswordBody, parseProfileUpdateBody } from '../validation/auth.js'
 import { sendSuccess } from '../utils/response.js'
@@ -57,6 +57,26 @@ export async function registerHandler(req: Request, res: Response): Promise<void
       expiresAt: loginResult.expiresAt.toISOString()
     }
   }, `注册成功，欢迎 ${result.nickname}`, 201)
+}
+
+/** POST /api/auth/demo-account — 一键生成体验账号 */
+export async function demoAccountHandler(_req: Request, res: Response): Promise<void> {
+  const demo = await createDemoAccount()
+
+  // 生成后自动登录
+  const loginResult = await loginUser(demo.userCode, demo.password)
+  setSessionCookie(res, loginResult.token)
+
+  sendSuccess(res, {
+    user: {
+      userCode: demo.userCode,
+      nickname: demo.nickname,
+      password: demo.password
+    },
+    session: {
+      expiresAt: loginResult.expiresAt.toISOString()
+    }
+  }, `体验账号已生成：${demo.userCode}`, 201)
 }
 
 /** POST /api/auth/login */

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express'
 import { getTrustedUserActor } from '../middlewares/request-identity.js'
+import { listMemoryPhotoFileRefs, removeMemoryPhotoFiles } from '../services/memory-photo.js'
 import { rejectIdentityInInput } from '../services/user-subject.js'
 import {
   addMemory,
@@ -16,11 +17,9 @@ import { parseMemoryIdParam, parseMemoryListQuery, parseMemoryCreate, parseMemor
 /**
  * 阶段4.3.6：用户「时光记录」的 HTTP 入口。
  *
- * **今天没有任何一条请求能走到业务函数**，原因与 4.3.2—4.3.5 完全相同：
- * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前，
- * 正式认证（阶段4.6）完成前它对任何方法、任何路径都先回 501 `auth-not-implemented`
- * （`middlewares/request-identity.ts:98-100`，GET 也一样）；
- * 就算有人绕过守卫，`getTrustedUserActor(req)` 也只会抛同一个 501，不会给出「某个用户」的结论。
+ * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前：
+ * 认证（阶段4.6）已落地，守卫只认会话 cookie，未认证请求一律 401 `identity-missing`（GET 也一样）；
+ * 就算有人绕过守卫，`getTrustedUserActor(req)` 也只会抛 401，不会给出「某个用户」的结论。
  * 这里没有兜底身份、没有默认用户、没有「测试环境就当自己是 1 号用户」。
  *
  * 每个 handler 的固定四步，顺序不能换（照搬已验收的形状）：
@@ -100,6 +99,10 @@ export async function removeMemoryHandler(req: Request, res: Response): Promise<
   rejectForgedIdentity(req)
   const { id } = parseMemoryIdParam.input(req).params
   const actor = getTrustedUserActor(req)
+  // 图片行会被外键 Cascade 一起删掉，磁盘上的字节只有在这一行之前读清单才找得回来；
+  // 清单读不到（记录不存在或不是本人）与 removeMemory 给出同一句 404，不会多一种结局
+  const photoFiles = await listMemoryPhotoFileRefs(actor, id)
   const removed = await removeMemory(actor, id)
+  await removeMemoryPhotoFiles(photoFiles)
   sendSuccess(res, { id: removed.id, dateKey: removed.dateKey }, `已删除这条记录（${removed.title}，${removed.dateKey}）`)
 }

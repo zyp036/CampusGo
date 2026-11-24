@@ -296,7 +296,7 @@ async function seed(client: PrismaClient): Promise<void> {
   await client.badge.createMany({ data: badgeSeeds })
 }
 
-/** 11 张业务表的行数快照，用于证明 GET 不写库、正式库没被写过 */
+/** 15 张业务表的行数快照，用于证明 GET 不写库、正式库没被写过 */
 const TABLES = [
   'cg_user',
   'cg_user_preference',
@@ -308,7 +308,12 @@ const TABLES = [
   'cg_memory',
   'cg_partner_activity',
   'cg_activity_participant',
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ]
 
 async function countsOf(client: PrismaClient): Promise<Record<string, number>> {
@@ -796,7 +801,7 @@ async function main(): Promise<void> {
     }
     const afterWrites = await countsOf(testClient)
     check(
-      '只读保证：一轮 GET 之后 11 张表行数一字不变',
+      '只读保证：一轮 GET 之后 15 张表行数一字不变',
       JSON.stringify(beforeWrites) === JSON.stringify(afterWrites),
       `前后差异：${describe(
         Object.fromEntries(

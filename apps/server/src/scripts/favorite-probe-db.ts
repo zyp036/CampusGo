@@ -25,7 +25,7 @@ import {
  * 5) 只在开发口径跑：这一支要用 `injected-test` 身份，生产口径下 `--db` 拒绝执行。
  *
  * 清理口径：先按 `user_id` 删 `cg_user_favorite_place`，再按主键删标记地点与标记用户，
- * 最后复核 11 张表行数回到开跑前基线。
+ * 最后复核 15 张表行数回到开跑前基线。
  */
 
 const MARKER_LABEL = '【4.3.3收藏探针】'
@@ -45,7 +45,13 @@ const ALL_TABLES = [
   'cg_user_challenge',
   'cg_memory',
   'cg_partner_activity',
-  'cg_activity_participant'
+  'cg_activity_participant',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback。
+  // 收尾复核要盖住全部 15 张业务表：少列一张，等于默认它可以被本轮写脏。
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 
 interface OkFn {
@@ -259,7 +265,9 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       const dbStamp = String((await rowsOf(USER_A)).find((r) => String(r.place_id) === place1)?.c ?? '')
       /* 库内字面量按 UTC 挂钟解读再比：Prisma 读 DATETIME 时不带时区、直接当 UTC 造 Date，
          而 @default(now()) 这一列由 MySQL 以会话时区填充——4.3.2 DB4 已把这条口径记成待确认项，本轮不动它。 */
-      const dbMs = dbStamp ? Date.parse(`${dbStamp.replace(' ', 'T').slice(0, 19)}Z`) : NaN
+      // 毫秒必须留在串里：`DATE_FORMAT(...,'%f')` 给的是 6 位微秒，只截到秒会让「同一时刻」
+      // 差出最多 999 ms，本条阈值只有 500 ms——过去能过是运气（那一行的毫秒恰好小于 500）。
+      const dbMs = dbStamp ? Date.parse(`${dbStamp.slice(0, 10)}T${dbStamp.slice(11, 23)}Z`) : NaN
       a.ok(dbStamp.length > 0 && Math.abs(Date.parse(on.favoritedAt ?? '') - dbMs) < 500, `favoritedAt 与库内 created_at 不是同一时刻：${dbStamp} vs ${String(on.favoritedAt)}`)
       const off = await getFavoritePlaceStatus(actorA, place3, deps)
       a.ok(off.favorited === false && off.favoritedAt === null, `未收藏应返回 false/null：${jsonSafe(off)}`)
@@ -420,7 +428,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
     const deletedFavs = await prisma.userFavoritePlace.deleteMany({ where: { userId: { in: createdUserIds } } })
     const deletedPlaces = await prisma.campusPlace.deleteMany({ where: { id: { in: createdPlaceIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
-    await h.check('DB12', '清理：只删本轮标记行，全库 11 张表回到开跑前基线', async (a) => {
+    await h.check('DB12', '清理：只删本轮标记行，全库 15 张表回到开跑前基线', async (a) => {
       a.ok(deletedUsers.count === createdUserIds.length, `标记用户删除数不对：${deletedUsers.count}/${createdUserIds.length}`)
       a.ok((await count(USER_TABLE, `\`user_code\` LIKE '${TEST_CODE_PREFIX}%'`)) === 0, '清理后仍有标记用户')
       a.ok((await count(PLACE_TABLE, `\`id\` LIKE '${PLACE_MARKER_PREFIX}%'`)) === 0, '清理后仍有标记地点')

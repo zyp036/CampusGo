@@ -9,7 +9,7 @@ import { config } from '../config/index.js'
  * 阶段3.5：数据持久化与数据一致性验证探针。
  *
  * 用法（必须在 apps/server 下执行，读 apps/server/.env）：
- *   npm run probe:persistence -- status      只读：实例、权限、11 张表行数、本轮标识行
+ *   npm run probe:persistence -- status      只读：实例、权限、15 张表行数、本轮标识行
  *   npm run probe:persistence -- seed        写入本轮标识行（三张内容表，共 9 行）
  *   npm run probe:persistence -- verify      接口 ↔ MySQL 逐字段一致性（含分页、筛选、下架隐藏）
  *   npm run probe:persistence -- dump        把库内标识行原样落成 tmp/p35-db-snapshot.json，给前端三方一致性用例读
@@ -45,7 +45,11 @@ const TABLES = [
   'cg_partner_activity',
   'cg_activity_participant',
   'cg_user_favorite_place',
-  'cg_session'
+  'cg_session',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 const CONTENT_TABLES = ['cg_campus_place', 'cg_challenge', 'cg_badge'] as const
 

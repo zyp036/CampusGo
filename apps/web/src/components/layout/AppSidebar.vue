@@ -16,11 +16,11 @@ const user = useUserStore()
 const content = useContentStore()
 
 /**
- * 阶段3.4.3：侧边栏的任务与徽章口径跟着数据源开关走。
+ * 侧边栏的任务与徽章口径跟着数据源开关走。
  * - 示例数据：与阶段2.2 验收时一致，分母是本地任务文件；
- * - 真实接口：分母是接口返回的任务定义条数，分子仍然是这台浏览器的本地完成情况；
- *   列表还没取回来（比如直接落在首页、没进过挑战页）就写「未取到」，不写成 0/0 让人以为服务器上是空的；
- *   「已获徽章」没有用户获得记录接口，如实显示「未判定」，不用 0/N 冒充结论。
+ * - 真实接口：分母是接口返回的任务定义条数，分子是服务端取回的完成记录（B3）；
+ *   定义或完成记录任一没取回就写「未取到」，不写成 0/0 让人以为服务器上是空的；
+ *   「已获徽章」在解锁记录取回前如实显示「未判定」，不用 0/N 冒充结论。
  */
 const isReal = computed(() => content.mode === 'real')
 
@@ -29,7 +29,7 @@ function tasksOfType(kind: ChallengeTask['kind'], fallback: ChallengeTask[]): Ch
 }
 
 function taskMetric(kind: ChallengeTask['kind'], fallback: ChallengeTask[]): string {
-  if (isReal.value && content.challenges.status !== 'ready') return '未取到'
+  if (isReal.value && (content.challenges.status !== 'ready' || !user.domainLoaded.tasks)) return '未取到'
   const list = tasksOfType(kind, fallback)
   return `${list.filter((task) => user.isTaskCompleted(task.id)).length}/${list.length}`
 }
@@ -109,7 +109,7 @@ async function handleLogout(): Promise<void> {
       <div class="mt-auto rounded-inner bg-surface-muted px-3 py-3">
         <div class="flex items-center justify-between gap-2">
           <p class="text-overline text-ink-400">当前进度</p>
-          <StatusBadge tone="brand" :dot="true">界面演示</StatusBadge>
+          <StatusBadge tone="brand" :dot="true">{{ isReal ? '真实数据' : '界面演示' }}</StatusBadge>
         </div>
         <dl class="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2.5">
           <div v-for="metric in progressMetrics" :key="metric.label">
@@ -119,8 +119,11 @@ async function handleLogout(): Promise<void> {
             </dd>
           </div>
         </dl>
-        <p class="mt-3 text-[11px] leading-relaxed text-ink-400">
-          本地状态 · 只保存在这台设备的浏览器里，刷新与关页面都会保留；换设备或清掉浏览器数据才回到初始值。数据库已在阶段3.1 连通，但还没有业务表，这些数字要等阶段3.2 建表、阶段4 接接口才会入库。
+        <p v-if="isReal" class="mt-3 text-[11px] leading-relaxed text-ink-400">
+          真实数据 · 登录后的进度、积分与记录保存在服务端数据库，随账号跨设备保留；未登录时这里显示空态，不代表服务器上没有数据。
+        </p>
+        <p v-else class="mt-3 text-[11px] leading-relaxed text-ink-400">
+          数据保存在浏览器本地，刷新与关页面都会保留；换设备或清掉浏览器数据才会重置。
         </p>
       </div>
     </nav>

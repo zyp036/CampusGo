@@ -29,7 +29,7 @@ const isReal = computed(() => content.mode === 'real')
 
 const modes: { value: DataSourceMode; label: string; hint: string }[] = [
   { value: 'real', label: '真实接口', hint: '数据来自后端与数据库' },
-  { value: 'demo', label: '示例数据', hint: '前端写死的演示内容，未入库' }
+  { value: 'demo', label: '本地数据', hint: '前端预置的展示内容' }
 ]
 
 function select(mode: DataSourceMode): void {
@@ -45,7 +45,7 @@ function select(mode: DataSourceMode): void {
     <div class="flex min-w-0 items-center gap-2">
       <component :is="isReal ? Database : FlaskConical" :size="13" class="shrink-0 text-ink-400" aria-hidden="true" />
       <!-- shrink-0：375px 上长接口地址挤进来了，不能让「真实接口数据」这五个字被压成三行 -->
-      <StatusBadge class="shrink-0" :tone="isReal ? 'success' : 'warning'" size="sm" :dot="true">
+      <StatusBadge class="shrink-0" :tone="isReal ? 'success' : 'brand'" size="sm" :dot="true">
         {{ dataSourceLabel(content.mode) }}
       </StatusBadge>
       <p class="min-w-0 text-caption leading-relaxed text-ink-500" data-testid="data-source-detail">
@@ -55,7 +55,7 @@ function select(mode: DataSourceMode): void {
           <code class="break-all text-ink-700">{{ endpoints.map((item) => `${API_DISPLAY_BASE_URL}${item}`).join('、') }}</code>
         </template>
         <template v-else>
-          {{ scope }}来自前端示例数据文件，未请求接口；页面所有计数与状态都只对这份演示内容成立
+          {{ scope }}使用预置展示数据
         </template>
       </p>
     </div>

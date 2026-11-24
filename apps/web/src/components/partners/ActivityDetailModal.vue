@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { CalendarClock, MapPin, Users } from '@lucide/vue'
+import { computed } from 'vue'
+import { CalendarClock, MapPin, MessageCircle } from '@lucide/vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import DemoTag from '@/components/ui/DemoTag.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { DEMO_NOTICE_PARTNERS } from '@/data/demoNotice'
 import type { PartnerActivity } from '@/types/models'
 
-const props = defineProps<{
-  activity: PartnerActivity | null
-  joined: boolean
-}>()
+const props = withDefaults(
+  defineProps<{ activity: PartnerActivity | null; joined: boolean; real?: boolean; busy?: boolean }>(),
+  { real: false, busy: false }
+)
 
 const emit = defineEmits<{
   close: []
   toggleJoin: [activityId: string]
+  openChat: [activityId: string]
 }>()
 
 const STATUS_META = {
@@ -23,26 +23,36 @@ const STATUS_META = {
   full: { label: '已满员', tone: 'neutral' as const }
 }
 
-function seatText(activity: PartnerActivity, joined: boolean): string {
-  return `${joined ? activity.joined + 1 : activity.joined} / ${activity.capacity} 人`
-}
+const closed = computed(() => props.real && props.activity?.activityStatus === 'CLOSED')
+const cancelled = computed(() => props.real && props.activity?.activityStatus === 'CANCELLED')
+const inactive = computed(() => closed.value || cancelled.value)
+const statusBadge = computed(() => {
+  if (closed.value) return { label: '已结束', tone: 'neutral' as const }
+  if (cancelled.value) return { label: '已取消', tone: 'neutral' as const }
+  return props.activity ? STATUS_META[props.activity.status] : STATUS_META.recruiting
+})
+const displayJoined = computed(() => {
+  if (!props.activity) return 0
+  return props.real ? props.activity.joined : props.joined ? props.activity.joined + 1 : props.activity.joined
+})
+const seatText = computed(() =>
+  props.activity ? `${displayJoined.value} / ${props.activity.capacity} 人` : ''
+)
+const canJoin = computed(() => Boolean(props.activity) && !inactive.value && props.activity!.status !== 'full')
 </script>
 
 <template>
   <BaseModal
     :open="Boolean(activity)"
     :title="activity ? activity.title : '活动详情'"
-    description="演示场次：发起人、人数与开放状态都不是真实数据"
     close-label="关闭"
     @close="emit('close')"
   >
     <div v-if="activity" class="space-y-4">
       <div class="flex flex-wrap items-center gap-2">
-        <StatusBadge :tone="STATUS_META[activity.status].tone">
-          {{ STATUS_META[activity.status].label }}
-        </StatusBadge>
+        <StatusBadge :tone="statusBadge.tone">{{ statusBadge.label }}</StatusBadge>
         <StatusBadge tone="accent">{{ activity.category }}</StatusBadge>
-        <StatusBadge tone="neutral">{{ seatText(activity, joined) }}</StatusBadge>
+        <StatusBadge tone="neutral">{{ seatText }}</StatusBadge>
       </div>
 
       <p class="text-body-sm leading-relaxed text-ink-700">{{ activity.description }}</p>
@@ -66,14 +76,13 @@ function seatText(activity: PartnerActivity, joined: boolean): string {
           <dt class="text-overline text-ink-400">发起人</dt>
           <dd class="mt-1 text-body-sm font-medium text-ink-900">
             {{ activity.host }}
-            <span class="cg-demo-tag ml-1">示例昵称</span>
+            <span v-if="activity.hostUserCode" class="ml-1 text-caption text-ink-400">{{ activity.hostUserCode }}</span>
           </dd>
         </div>
         <div>
           <dt class="text-overline text-ink-400">身份</dt>
           <dd class="mt-1 text-body-sm font-medium text-ink-900">
-            {{ activity.hostTag }}
-            <span class="cg-demo-tag ml-1">示例</span>
+            {{ activity.hostTag || '未填写' }}
           </dd>
         </div>
       </dl>
@@ -88,30 +97,36 @@ function seatText(activity: PartnerActivity, joined: boolean): string {
         </li>
       </ul>
 
-      <div class="flex items-start gap-2 rounded-inner bg-surface-sunken p-3.5">
-        <Users :size="15" class="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
-        <p class="text-caption leading-relaxed text-ink-500">
-          这里没有聊天入口。报名后怎么联系、谁审核名额，要等阶段4 的用户体系和阶段10
-          的消息通道接上之后才有；现在页面上的报名按钮只改这台浏览器的本地状态。
-        </p>
+      <!-- 聊天入口：已报名才显示 -->
+      <div v-if="joined" class="flex items-center gap-2 rounded-inner border border-brand-200 bg-brand-50 p-3.5">
+        <MessageCircle :size="18" class="shrink-0 text-brand-600" aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+          <p class="text-body-sm font-semibold text-brand-700">活动聊天</p>
+          <p class="text-caption text-brand-600">与其他参与者沟通集合细节</p>
+        </div>
+        <BaseButton variant="soft" size="sm" data-testid="partner-modal-chat" @click="emit('openChat', activity!.id)">
+          进入聊天
+        </BaseButton>
       </div>
-
-      <DemoTag :text="DEMO_NOTICE_PARTNERS" />
     </div>
 
     <template #footer>
       <div class="flex flex-wrap items-center gap-2">
         <BaseButton
-          v-if="activity && activity.status !== 'full'"
+          v-if="canJoin"
           :variant="joined ? 'outline' : 'gradient'"
           size="sm"
+          :disabled="busy"
           data-testid="partner-modal-join"
-          @click="emit('toggleJoin', activity.id)"
+          @click="emit('toggleJoin', activity!.id)"
         >
-          {{ joined ? '取消报名' : '报名参加（演示）' }}
+          {{ joined ? '取消报名' : '报名参加' }}
         </BaseButton>
+        <span v-else-if="activity && inactive" class="text-caption text-ink-400">
+          {{ cancelled ? '这场活动已被主办人取消' : '这场活动已结束' }}
+        </span>
         <span v-else-if="activity" class="text-caption text-ink-400">
-          名额已满，候补功能在阶段9 之前不提供
+          名额已满
         </span>
         <BaseButton variant="ghost" size="sm" class="ml-auto" @click="emit('close')">
           关闭

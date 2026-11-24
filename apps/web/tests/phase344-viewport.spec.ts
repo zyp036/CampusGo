@@ -124,7 +124,10 @@ test.describe('阶段3.4.4 请求状态五视口', () => {
     await assertNoHorizontalScroll(page, '挑战与徽章加载中')
     await page.screenshot({ path: shot('loading-challenge'), fullPage: true })
 
-    await expect(page.getByTestId('challenge-badge-empty')).toBeVisible({ timeout: 20_000 })
+    /* 徽章请求落地：空库是空态、有系统模板是徽章格，两种都算「取到了」 */
+    await expect(
+      page.locator('[data-testid="badge-tile"], [data-testid="challenge-badge-empty"]').first()
+    ).toBeVisible({ timeout: 20_000 })
     expect(pageErrors, '加载过程中页面不应抛出未捕获异常').toEqual([])
   })
 
@@ -148,28 +151,42 @@ test.describe('阶段3.4.4 请求状态五视口', () => {
     await page.screenshot({ path: shot('empty-places'), fullPage: true })
 
     await page.goto('/challenge')
-    await expect(page.getByTestId('challenge-daily-empty')).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByTestId('challenge-badge-empty')).toContainText('徽章定义当前是 0 条')
+    const challengeItems = (await (await page.request.get('/api/challenges')).json()).data.items as { kind: string }[]
+    const badgeTotal = ((await (await page.request.get('/api/badges')).json()).data.items as unknown[]).length
+    const dailyTotal = challengeItems.filter((i) => i.kind === 'DAILY').length
+    if (dailyTotal === 0) {
+      await expect(page.getByTestId('challenge-daily-empty')).toBeVisible({ timeout: 20_000 })
+    } else {
+      await expect(page.getByTestId('challenge-task')).toHaveCount(challengeItems.length, { timeout: 20_000 })
+    }
+    if (badgeTotal === 0) {
+      await expect(page.getByTestId('challenge-badge-empty')).toContainText('徽章定义当前是 0 条')
+    } else {
+      await expect(page.getByTestId('badge-tile')).toHaveCount(badgeTotal)
+    }
     /* 空库不是失败：提示条与骨架这时候一条都不该在 */
     await expect(page.getByTestId('content-failed')).toHaveCount(0)
     await expect(page.getByTestId('content-loading')).toHaveCount(0)
-    await assertNoHorizontalScroll(page, '挑战与徽章空态')
+    await assertNoHorizontalScroll(page, '挑战与徽章正常态')
     await page.screenshot({ path: shot('empty-challenge'), fullPage: true })
 
-    /* 资料页的成就格：直接进来时这一页自己不发徽章请求，就如实说「没请求」，不写「来自接口」 */
+    /* 资料页：真实模式未登录只给登录入口，成就格与徽章来源说明都要登录后才渲染（批次2  auth 闸） */
     await page.goto('/profile')
-    await expect(page.getByTestId('profile-badge-source-note')).toContainText('这一页不请求徽章接口', {
-      timeout: 20_000
-    })
-    await assertNoHorizontalScroll(page, '个人中心空态')
+    await expect(page.getByTestId('profile-login-prompt')).toBeVisible({ timeout: 20_000 })
+    await assertNoHorizontalScroll(page, '个人中心未登录态')
     await page.screenshot({ path: shot('empty-profile'), fullPage: true })
 
-    /* 从挑战页 SPA 过来：徽章那次的真实结果要跟着变成「已读到 0 条」，不是残留也不是编造 */
+    /* 从挑战页 SPA 过来：未登录仍是登录入口，不残留挑战页的徽章计数，也不冒充已读到徽章定义 */
     await page.goto('/challenge')
-    await expect(page.getByTestId('challenge-badge-empty')).toBeVisible({ timeout: 20_000 })
+    if (badgeTotal === 0) {
+      await expect(page.getByTestId('challenge-badge-empty')).toBeVisible({ timeout: 20_000 })
+    } else {
+      await expect(page.getByTestId('badge-tile')).toHaveCount(badgeTotal, { timeout: 20_000 })
+    }
     await page.locator('a[href="/profile"]:visible').first().click()
     await expect(page).toHaveURL(/\/profile$/)
-    await expect(page.getByTestId('profile-badge-source-note')).toContainText('已读到 0 条徽章定义')
+    await expect(page.getByTestId('profile-login-prompt')).toBeVisible()
+    await expect(page.getByTestId('profile-badge-source-note')).toHaveCount(0)
   })
 
   test('Error：后端真回答 400 与连接失败两种画法都不破版', async ({ page }) => {

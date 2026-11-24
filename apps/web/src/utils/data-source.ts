@@ -54,5 +54,5 @@ export function writeDataSourceMode(mode: DataSourceMode): void {
 }
 
 export function dataSourceLabel(mode: DataSourceMode): string {
-  return mode === 'real' ? '真实接口数据' : '示例数据（未入库）'
+  return mode === 'real' ? '接口数据' : '本地数据'
 }

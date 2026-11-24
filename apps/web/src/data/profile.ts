@@ -120,16 +120,16 @@ export const profileMenus: ProfileMenuItem[] = [
   {
     id: 'account',
     label: '账号与安全',
-    description: '手机号绑定、登录设备',
+    description: '修改登录密码',
     icon: CircleUser,
-    pending: true
+    pending: false
   },
   {
     id: 'points',
     label: '积分与权益',
-    description: '积分兑换校内商家优惠',
+    description: '查看经验值与积分明细',
     icon: Coins,
-    pending: true
+    pending: false
   },
   {
     id: 'medal',
@@ -142,23 +142,23 @@ export const profileMenus: ProfileMenuItem[] = [
   {
     id: 'privacy',
     label: '隐私与数据授权',
-    description: '位置、相册、对外可见范围',
+    description: '管理数据可见范围与偏好',
     icon: Lock,
-    pending: true
+    pending: false
   },
   {
     id: 'export',
     label: '导出我的时光记录',
-    description: '生成一份可保存的行程档案',
+    description: '导出全部记录为 JSON 文件',
     icon: Download,
-    pending: true
+    pending: false
   },
   {
     id: 'feedback',
     label: '意见反馈',
     description: '告诉团队哪里不好用',
     icon: Mail,
-    pending: true
+    pending: false
   },
   {
     id: 'about',
@@ -169,13 +169,13 @@ export const profileMenus: ProfileMenuItem[] = [
   }
 ]
 
-/** 退出登录：阶段4 有真实会话之前只做本地演示 */
+/** 退出登录：清除服务端会话 Cookie，回到登录页 */
 export const signOutMenuItem = {
   id: 'signout',
   label: '退出登录',
-  description: '演示环境，不会清除任何数据',
+  description: '清除本机会话，回到登录页',
   icon: Shield,
-  pending: true
+  pending: false
 }
 
 /** 个人中心顶部奖励位文案（阶段7 接入积分后替换） */

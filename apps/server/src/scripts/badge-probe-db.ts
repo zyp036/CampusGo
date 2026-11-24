@@ -23,7 +23,7 @@ import {
  * - DB6 `metric = NONE ⇒ target 必须 NULL` 这条**库里拦不住**（全库 0 条 CHECK 约束），只能由服务层判；
  * - DB7/DB8/DB9 三种 metric 的 current 各自来自哪张表、按哪个条件数（含改 kind 的反向对照）；
  * - DB10 用户隔离、DB11 幂等、DB12 SEED 行不改写、DB13 身份四条口径、DB14 评估不动 total_exp/points；
- * - DB15 已下架定义不挡读历史、只挡新点亮；DB16 收尾按主键清干净、11 张表回基线。
+ * - DB15 已下架定义不挡读历史、只挡新点亮；DB16 收尾按主键清干净、15 张表回基线。
  *
  * 与 4.3.4 那一支最关键的差别在 DB14：徽章这条写路径**只写 `cg_user_badge` 一张表**，
  * 不发任何 `UPDATE cg_user`，所以「点亮徽章不发放任何奖励」在真库上是有证据的，
@@ -47,7 +47,7 @@ import {
  *
  * 清理口径：先删 `cg_user_badge`（被 `cg_badge` 的 Restrict 压着，必须最先），
  * 再删 `cg_user_challenge` / `cg_activity_participant`，然后删标记活动、标记任务、标记徽章定义，
- * 最后删标记用户。收尾复核 11 张表行数回到开跑前基线、`cg_user` 逐行（含 total_exp / points / updated_at）与开跑前一致。
+ * 最后删标记用户。收尾复核 15 张表行数回到开跑前基线、`cg_user` 逐行（含 total_exp / points / updated_at）与开跑前一致。
  *
  * **本分支只验证真实库行为**：四条 HTTP 接口对真实请求仍一律 501（正式认证属阶段4.6），接口层 NOT TESTED。
  */
@@ -75,7 +75,13 @@ const ALL_TABLES = [
   'cg_memory',
   ACTIVITY_TABLE,
   PART_TABLE,
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback。
+  // 收尾复核要盖住全部 15 张业务表：少列一张，等于默认它可以被本轮写脏。
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 
 /** 标记用户的初始缓存：430 经验 / 120 积分抄已验收的前端初始值（`apps/web/src/stores/user.ts:23-24`），
@@ -399,6 +405,19 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
           ` FROM \`${RECORD_TABLE}\` WHERE \`user_id\` = ? ORDER BY \`badge_id\``,
         userId
       )
+    /**
+     * 只保留本轮标记徽章（`p435bd-b*`）的行与返回项。
+     *
+     * 库里从真实数据接入那轮起有 9 枚真实定义（b-1…b-9），已验收的 `evaluateBadgeUnlocks`
+     * 评估的是**全部上架定义**——标记用户完成了任务、报了活动，真实徽章同样点亮（实测 b-1、b-3、b-7）。
+     * 那是正确行为，不是缺陷；把真实徽章下掉或删掉它们的记录来让断言变绿，等于伪造基线。
+     * 本探针要证的从来是「自己造的这批定义在真库里的落库形态」，所以集合与计数一律圈在标记范围内；
+     * 真实徽章那几行由 DB16 的「按标记用户清理」一起删掉，收尾仍回 0 行基线。
+     */
+    const isProbeBadge = (badgeId: unknown) => String(badgeId).startsWith(BADGE_MARKER_PREFIX)
+    const ownRows = (rows: Array<Record<string, unknown>>) => rows.filter((r) => isProbeBadge(r.badge_id))
+    /** 返回体里的四组之一：按 badgeId 圈出本轮标记徽章那几项 */
+    const ownItems = <T extends { badgeId: string }>(items: readonly T[]) => items.filter((i) => isProbeBadge(i.badgeId))
     const stampOf = async (userId: string, badgeId: string) =>
       String((await first(`SELECT ${fmt('unlocked_at')} AS t FROM \`${RECORD_TABLE}\` WHERE \`user_id\` = ? AND \`badge_id\` = ?`, userId, badgeId)).t ?? '')
     const sourceOf = async (userId: string, badgeId: string) =>
@@ -467,9 +486,11 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       )
       h.observe(`DB1 并发评估两侧结果（隔离级别 ${isolation}，两个事务各自看不见对方的新行）：${jsonSafe(outcomes)}`)
       const rows = await rowsOf(USER_A)
-      a.ok(rows.length === 2, `并发评估之后甲应有 2 行，实得 ${rows.length}（${jsonSafe(rows)}）`)
-      a.ok(rows.map((r) => String(r.badge_id)).sort().join(',') === [B_TASK_2, B_EXPLORE_2].sort().join(','), `落库的徽章不对：${jsonSafe(rows.map((r) => r.badge_id))}`)
+      const mine = ownRows(rows)
+      a.ok(mine.length === 2, `并发评估之后甲应有本轮的 2 行，实得 ${mine.length}（全部 ${rows.length} 行：${jsonSafe(rows)}）`)
+      a.ok(mine.map((r) => String(r.badge_id)).sort().join(',') === [B_TASK_2, B_EXPLORE_2].sort().join(','), `落库的本轮徽章不对：${jsonSafe(mine.map((r) => r.badge_id))}`)
       a.ok(rows.every((r) => String(r.source) === 'AUTO'), `服务层写出的行不该有非 AUTO 的 source：${jsonSafe(rows.map((r) => r.source))}`)
+      h.observe(`DB1 甲的行里有 ${rows.length - mine.length} 枚真实徽章（${jsonSafe(rows.filter((r) => !isProbeBadge(r.badge_id)).map((r) => r.badge_id))}）——真实定义同样参与评估，这是已验收服务的正确行为，断言按标记范围圈定`)
       /* 真库层面的「每枚只有一行」：GROUP BY HAVING 数的是 InnoDB 的物理行，不看接口返回 */
       const dups = await raw(
         `SELECT \`user_id\`, \`badge_id\`, COUNT(*) AS n FROM \`${RECORD_TABLE}\` GROUP BY \`user_id\`, \`badge_id\` HAVING COUNT(*) > 1`
@@ -673,7 +694,8 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       }
       const evalStart = Date.now()
       const evaluated = await evaluateBadgeUnlocks(actorC, deps)
-      a.ok(evaluated.unlocked.length === 2, `丙应新点亮 2 枚（TASK / EXPLORE_TASK），实得 ${jsonSafe(evaluated.unlocked)}`)
+      const mineUnlocked = ownItems(evaluated.unlocked)
+      a.ok(mineUnlocked.length === 2, `丙应新点亮本轮的 2 枚（TASK / EXPLORE_TASK），实得 ${jsonSafe(mineUnlocked)}`)
 
       const taskTimes = await sourceTimes('TASK', USER_C)
       const exploreTimes = await sourceTimes('EXPLORE_TASK', USER_C)
@@ -751,7 +773,8 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       )
       const listed = await listUnlockedBadges(actorA, deps)
       a.ok(listed.items.every((i) => Object.keys(i).sort().join(',') === [...USER_BADGE_DTO_KEYS].sort().join(',')), `记录列表对外出现了内部列：${jsonSafe(listed.items.map((i) => Object.keys(i)))}`)
-      a.ok(listed.total === listed.items.length && listed.items.length === 2, `列表计数与库内不符：${jsonSafe(listed)}`)
+      a.ok(listed.total === listed.items.length, `列表 total 与 items 不符：${jsonSafe(listed)}`)
+      a.ok(ownItems(listed.items).length === 2, `本轮点亮的 2 枚在列表里数不对：${jsonSafe(listed.items)}`)
       const stampMap = new Map((await rowsOf(USER_A)).map((r) => [String(r.badge_id), String(r.unlocked)]))
       a.ok(
         listed.items.every((i) => Date.parse(i.unlockedAt) === literalToMs(String(stampMap.get(i.badgeId)))),
@@ -787,7 +810,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       a.ok(explore?.current === 2, `EXPLORE_TASK 没按 kind 过滤（把 5 条全算上了）：current=${String(explore?.current)}`)
       a.ok((explore?.current ?? -1) !== (task?.current ?? -2), '两种 metric 的 current 一样，说明 kind 过滤没生效')
       a.ok(explore?.reached === true && explore?.unlocked === true && explore?.metric === 'EXPLORE_TASK', `探索徽章判定不对：${jsonSafe(explore)}`)
-      a.ok((await rowsOf(USER_A)).length === 2, '重算之后甲的记录行数变了（既不该新增也不该熄灭）')
+      a.ok(ownRows(await rowsOf(USER_A)).length === 2, `重算之后甲的本轮记录行数变了（既不该新增也不该熄灭）：${jsonSafe(await rowsOf(USER_A))}`)
 
       /* 反向对照：把一条 DAILY 改成 EXPLORE，服务端立刻跟着变——抄前端硬编码 id 数组的写法做不到这件事 */
       await prisma.$executeRawUnsafe(`UPDATE \`${CHALLENGE_TABLE}\` SET \`kind\` = 'EXPLORE' WHERE \`id\` = '${CH_DAILY_1}'`)
@@ -797,7 +820,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       await prisma.$executeRawUnsafe(`UPDATE \`${CHALLENGE_TABLE}\` SET \`kind\` = 'DAILY' WHERE \`id\` = '${CH_DAILY_1}'`)
       const restored = await listBadgeProgress(actorA, deps)
       a.ok(restored.items.find((i) => i.badgeId === B_EXPLORE_2)?.current === 2, `改回 DAILY 之后探索数没退回 2`)
-      a.ok(jsonSafe(await rowsOf(USER_A)).length > 0 && (await rowsOf(USER_A)).length === 2, '改 kind 的两次读写出了行')
+      a.ok(ownRows(await rowsOf(USER_A)).length === 2, `改 kind 的两次读写出了本轮的行：${jsonSafe(await rowsOf(USER_A))}`)
       a.ok((await stampOf(USER_A, B_EXPLORE_2)) === (await sourceTimes('EXPLORE_TASK', USER_A))[1], `甲的探索徽章 unlocked_at 与第 2 条探索完成不符：${await stampOf(USER_A, B_EXPLORE_2)}`)
       h.observe('DB8 口径：服务端读的是 `cg_challenge.kind`（schema.prisma:146、docs/db-model-design-3.2.md:66），不是前端 stores/user.ts:29 那份硬编码的探索任务 id 数组——这条是「后端不复制前端硬编码」的实测证据')
     })
@@ -857,9 +880,9 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       await completeTask(actorB, CH_EXPLORE_1, deps)
       await completeTask(actorB, CH_EXPLORE_2, deps)
       const evaluated = await evaluateBadgeUnlocks(actorB, deps)
-      a.ok(evaluated.unlocked.length === 2, `乙评估应点亮 2 枚，实得 ${jsonSafe(evaluated.unlocked)}`)
+      a.ok(ownItems(evaluated.unlocked).length === 2, `乙评估应点亮本轮的 2 枚，实得 ${jsonSafe(ownItems(evaluated.unlocked))}`)
       const bRows = await rowsOf(USER_B)
-      a.ok(bRows.length === 2 && bRows.every((r) => String(r.source) === 'AUTO'), `乙自己的行不对：${jsonSafe(bRows)}`)
+      a.ok(ownRows(bRows).length === 2 && bRows.every((r) => String(r.source) === 'AUTO'), `乙自己的本轮行不对：${jsonSafe(bRows)}`)
       a.ok(jsonSafe(await rowsOf(USER_A)) === jsonSafe(aRowsBefore), `乙的评估改了甲的行：${jsonSafe(await rowsOf(USER_A))}`)
       a.ok((await count(RECORD_TABLE)) === aRowsBefore.length + bRows.length + othersBefore, `全库行数不等于「甲 + 乙 + 别人原有」：${await count(RECORD_TABLE)} vs ${aRowsBefore.length}+${bRows.length}+${othersBefore}`)
       /* 同一枚徽章在两个人身上各一行：唯一键的键里带 user_id，所以这不是重复 */
@@ -907,10 +930,15 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
         `alreadyUnlocked 与库内行不逐字段一致：${jsonSafe(secondEval.alreadyUnlocked)} vs ${jsonSafe(before)}`
       )
       a.ok(jsonSafe(secondEval.notYet) === jsonSafe(firstEval.notYet) && jsonSafe(secondEval.notComputable) === jsonSafe(firstEval.notComputable), '两次评估的 notYet / notComputable 不稳定')
-      a.ok(secondEval.notComputable.length === 3, `算不出来的应是 3 枚（NONE / TASK-NULL / TASK-0，DB6 那枚已删），实得 ${jsonSafe(secondEval.notComputable)}`)
+      a.ok(ownItems(secondEval.notComputable).length === 3, `本轮算不出来的应是 3 枚（NONE / TASK-NULL / TASK-0，DB6 那枚已删），实得 ${jsonSafe(ownItems(secondEval.notComputable))}`)
       a.ok(
-        secondEval.notYet.length === 1 && secondEval.notYet[0]?.badgeId === B_TASK_9,
-        `还没达标的应只有 1 枚（TASK-9；已点亮的三枚落 alreadyUnlocked，算不出的三枚落 notComputable），实得 ${jsonSafe(secondEval.notYet)}`
+        ownItems(secondEval.notYet).length === 1 && ownItems(secondEval.notYet)[0]?.badgeId === B_TASK_9,
+        `本轮还没达标的应只有 1 枚（TASK-9；已点亮的落 alreadyUnlocked，算不出的落 notComputable），实得 ${jsonSafe(ownItems(secondEval.notYet))}`
+      )
+      h.observe(
+        `DB11 真实徽章一侧：notComputable ${jsonSafe(secondEval.notComputable.filter((i) => !isProbeBadge(i.badgeId)).map((i) => `${i.badgeId}/${i.reason}`))} · ` +
+          `notYet ${jsonSafe(secondEval.notYet.filter((i) => !isProbeBadge(i.badgeId)).map((i) => `${i.badgeId}/${i.target}>${i.current}`))} —— ` +
+          `真实定义里 6 枚 metric=NONE（算不出来）、b-3 差第 3 条探索完成，与本轮断言各走各的范围`
       )
       h.observe(`DB11 口径：甲在真库里 ${before.length} 行，第二次起返回体全落 alreadyUnlocked（幂等的判据是「行数不变 + 载荷不变」两条一起看，只看其一会漏掉「时间在漂」这种回归）`)
     })
@@ -1059,7 +1087,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       const afterOff = await getBadgeUnlockStatus(actorA, B_INACTIVE, deps)
       a.ok(afterOff.definitionActive === false && afterOff.unlocked === true && afterOff.source === 'AUTO', `再下架把历史答案改掉了：${jsonSafe(afterOff)}`)
       a.ok((await count(RECORD_TABLE, `\`user_id\` = '${USER_A}' AND \`badge_id\` = '${B_INACTIVE}'`)) === 1, '再下架删掉了既有记录（本轮没有撤销语义）')
-      a.ok((await rowsOf(USER_A)).length === 5, `甲的记录行数不对：${jsonSafe(await rowsOf(USER_A))}`)
+      a.ok(ownRows(await rowsOf(USER_A)).length === 5, `甲的本轮记录行数不对：${jsonSafe(await rowsOf(USER_A))}`)
       h.observe('DB15 口径：定义表的 active 只挡「新点亮」，不挡「查历史」，与已验收的 4.3.4 第 3.8 节同一条尺（services/user-badge.ts:492-499 的注释）；本轮甲共 5 行 = TASK/EXPLORE/ACTIVITY/SEED-b10/上架后的 b09')
     })
 
@@ -1073,7 +1101,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
     const deletedBadges = await prisma.badge.deleteMany({ where: { id: { in: createdBadgeIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
 
-    await h.check('DB16', '清理：只删本轮标记行，11 张表回到开跑前基线，cg_user 逐行与开跑前一致', async (a) => {
+    await h.check('DB16', '清理：只删本轮标记行，15 张表回到开跑前基线，cg_user 逐行与开跑前一致', async (a) => {
       a.ok(deletedUsers.count === createdUserIds.length, `标记用户删除数不对：${deletedUsers.count}/${createdUserIds.length}`)
       a.ok(deletedBadges.count === createdBadgeIds.length, `标记徽章删除数不对：${deletedBadges.count}/${createdBadgeIds.length}`)
       a.ok(deletedChallenges.count === createdChallengeIds.length, `标记任务删除数不对：${deletedChallenges.count}/${createdChallengeIds.length}`)
@@ -1107,7 +1135,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
         `DB 模式清理：删除 ${deletedRecords.count} 行解锁记录、${deletedTasks.count} 行完成记录、${deletedParts.count} 行报名、` +
           `${deletedActivities.count} 行标记活动、${deletedChallenges.count} 行标记任务、${deletedBadges.count} 行标记徽章、${deletedUsers.count} 行标记用户（顺序按外键：Restrict 的父表最后删）`
       )
-      h.observe(`DB 模式收尾复核：11 张表 ${jsonSafe(finalCounts)} 与基线 ${jsonSafe(baseline)} 逐项相等；标记行残留 ${residueText}；cg_user 聚合 ${jsonSafe(Object.fromEntries(Object.entries(agg).map(([k, v]) => [k, num(v)])))}、逐行形态与开跑前一致（${usersBefore}）`)
+      h.observe(`DB 模式收尾复核：15 张表 ${jsonSafe(finalCounts)} 与基线 ${jsonSafe(baseline)} 逐项相等；标记行残留 ${residueText}；cg_user 聚合 ${jsonSafe(Object.fromEntries(Object.entries(agg).map(([k, v]) => [k, num(v)])))}、逐行形态与开跑前一致（${usersBefore}）`)
       if (baseline[USER_TABLE] !== 0) h.observe(`注意：开跑前 cg_user 本就有 ${baseline[USER_TABLE]} 行（本轮的「标记用户全删」结论不依赖它是 0 行，逐行比对已覆盖）`)
     })
   } catch (error) {

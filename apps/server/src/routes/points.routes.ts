@@ -23,8 +23,7 @@ import { myProgressHandler, progressFindingsHandler } from '../controllers/point
  *
  * 这个 Router **不允许**用 `apiRouter.use('/points', …)` 直接挂：
  * 必须走 `routes/index.ts` 里的 `mountUserScopedRouter()`，由它先把 `requireTrustedUserActor`
- * 压在前缀上。正式认证完成前，两条对任何请求都返回 501 `auth-not-implemented`——
- * 路由存在但能力不存在，这是本轮刻意的状态，不是漏配。
+ * 压在前缀上。认证（阶段4.6）已落地：未认证请求一律 401 `identity-missing`。
  *
  * 两条都没有 `params` / `query` / `body` 入参，所以一条校验器都不挂
  * （同已验收的 `GET /api/achievements`）；伪造身份由控制器第一步的

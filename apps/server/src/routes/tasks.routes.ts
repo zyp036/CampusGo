@@ -18,8 +18,7 @@ import { parseTaskChallengeParam } from '../validation/tasks.js'
  * 这个 Router **不允许**用 `apiRouter.use('/tasks', …)` 直接挂：
  * 必须走 `routes/index.ts` 里的 `mountUserScopedRouter()`，由它先把 `requireTrustedUserActor`
  * 压在前缀上；漏掉守卫的写接口会让 `createApp()` 的装配期自检直接抛错、服务起不来。
- * 正式认证完成前，上面四条对任何请求都返回 501 `auth-not-implemented`——
- * 路由存在但能力不存在，这是本轮刻意的状态，不是漏配。
+ * 认证（阶段4.6）已落地：守卫只认会话 cookie，未认证请求一律 401 `identity-missing`。
  *
  * 为什么写入用 `/complete` 而不是 `POST /api/tasks/:challengeId`：
  * 这个前缀下的资源是「我的完成记录」，而 `:challengeId` 本身是任务定义表的 id，

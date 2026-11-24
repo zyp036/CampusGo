@@ -1539,7 +1539,7 @@ async function runHttpProbe(): Promise<void> {
     }
   })
 
-  await check('G5', '装配期写入边界：写路由基线 19 条，时光记录三条都在守卫之后', (a) => {
+  await check('G5', '装配期写入边界：写路由基线 27 条，时光记录九条都在守卫之后', (a) => {
     const app = createApp()
     const reportOfRoutes = describeMountedRoutes(app)
     a.ok(reportOfRoutes.readable, '扫描器读不到路由表，下面的结论不可信')
@@ -1548,10 +1548,14 @@ async function runHttpProbe(): Promise<void> {
       'DELETE /api/activities/:id',
       'DELETE /api/favorites/:placeId',
       'DELETE /api/memories/:id',
+      'DELETE /api/memories/photos/:photoId',
+      'DELETE /api/plans/:id',
       'DELETE /api/preferences/:groupKey/:optionKey',
       'DELETE /api/tasks/:challengeId/complete',
       'PATCH /api/auth/me',
       'PATCH /api/memories/:id',
+      'PATCH /api/partners/:id',
+      'PATCH /api/plans/:id',
       'POST /api/achievements/evaluate',
       'POST /api/activities/:id',
       'POST /api/auth/change-password',
@@ -1560,18 +1564,23 @@ async function runHttpProbe(): Promise<void> {
       'POST /api/auth/register',
       'POST /api/favorites/:placeId',
       'POST /api/memories',
+      'POST /api/memories/:id/photos',
+      'POST /api/partners',
+      'POST /api/partners/:id/cancel',
+      'POST /api/plans',
       'POST /api/preferences/:groupKey/:optionKey',
       'POST /api/tasks/:challengeId/complete',
       'PUT /api/preferences/:groupKey/:optionKey',
       'PUT /api/preferences/batch'
     ].sort().join(' ')
-    a.ok(writes === expected, `写路由基线不符（阶段4.6 起 = 偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 3 + 报名 2 + 认证 5）：实得 ${writes || '（0 条）'}`)
+    a.ok(writes === expected, `写路由基线不符（27 = 偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 5 + 报名 2 + 认证 5 + 主办 3 + 规划 3）：实得 ${writes || '（0 条）'}`)
     a.ok(reportOfRoutes.writeRoutes.filter((r) => !PUBLIC_WRITE_ROUTE_ALLOWLIST.has(r.path)).every((r) => r.guards.includes(USER_ACTOR_GUARD_NAME)), `有写路由没挂守卫：${JSON.stringify(reportOfRoutes.writeRoutes.filter((r) => !PUBLIC_WRITE_ROUTE_ALLOWLIST.has(r.path)).map((r) => `${r.method} ${r.path}`))}`)
     a.ok(reportOfRoutes.unguardedWriteRoutes.length === 0, `漏守卫的写路由进了路由表：${JSON.stringify(reportOfRoutes.unguardedWriteRoutes.map((r) => `${r.method} ${r.path}`))}`)
-    a.ok(reportOfRoutes.apiRouteCount === 43, `/api 之下的条数与已知基线不符（43 = 公开只读 8 条 + 偏好 6 + 收藏 4 + 任务 4 + 徽章 4 + 记录 5 + 报名 4 + 一致性只读 2 + 认证 6）：实得 ${reportOfRoutes.apiRouteCount}`)
-    a.ok(reportOfRoutes.routes.length === 44, `路由总数与已知基线不符（44 = /api 43 条 + 根路径 1 条）：实得 ${reportOfRoutes.routes.length}`)
+    a.ok(reportOfRoutes.apiRouteCount === 60, `/api 之下的条数与已知基线不符（60 = 公开只读 10 条（含天气 2）+ 偏好 6 + 收藏 4 + 任务 4 + 徽章 4 + 记录 9 + 报名 4 + 一致性只读 2 + 认证 6 + 搭子 6 + 规划 5）：实得 ${reportOfRoutes.apiRouteCount}`)
+    a.ok(reportOfRoutes.routes.length === 61, `路由总数与已知基线不符（61 = /api 60 条 + 根路径 1 条）：实得 ${reportOfRoutes.routes.length}`)
     const memories = reportOfRoutes.routes.filter((r) => r.path.startsWith('/api/memories'))
-    a.ok(memories.length === 5, `时光记录路由条数不对：${memories.length}`)
+    a.ok(memories.length === 9, `时光记录路由条数不对（9 = 五条记录本体 + 四条图片）：${memories.length}`)
+    a.ok(memories.filter((r) => r.path.includes('photos')).length === 4, '图片四条没挂满')
     a.ok(memories.every((r) => r.guards.includes(USER_ACTOR_GUARD_NAME)), '时光记录路由里有未挂守卫的条目')
     a.ok(memories.some((r) => r.path === '/api/memories/:id' && r.method === 'PATCH'), 'PATCH 单条没挂上（前端「只改提交的列」要的就是这条）')
     a.ok(!memories.some((r) => r.method === 'PUT'), '时光记录挂出了 PUT：本轮口径是 PATCH，PUT 语义会诱导前端整表覆盖')
@@ -1683,11 +1692,31 @@ async function runSourceProbe(): Promise<void> {
     a.ok((thinner.match(/ownedByWhere\(/g) ?? []).length === 0, '归属条件扫描器形同虚设')
   })
 
-  await check('H3', '每路由一个校验器：五条路由各挂且只挂一个 parseMemory*', (a) => {
+  await check('H3', '每路由一个校验器：九条路由各挂且只挂一个 parseMemory*', (a) => {
     const routesFile = fs.readFileSync(path.join(srcDir, 'routes', 'memories.routes.ts'), 'utf8')
     const code = stripComments(routesFile)
-    const lines = code.split('\n').map((l) => l.trim()).filter((l) => /^memoriesRouter\.(get|post|patch|delete|put)\(/.test(l))
-    a.ok(lines.length === 5, `时光记录路由条数不是 5：${lines.length}`)
+    // 路由声明从这一轮起会跨多行（上传那条要串三个中间件），所以按括号深度截出整条语句。
+    // 仍以「行」为边界的话，那条多行声明会被算成校验器 0 个——是扫描器过期，不是代码违规。
+    const statementsOf = (source: string, head: string): string[] => {
+      const out: string[] = []
+      let cursor = 0
+      for (;;) {
+        const start = source.indexOf(head, cursor)
+        if (start < 0) return out
+        let index = source.indexOf('(', start) + 1
+        let depth = 1
+        while (index < source.length && depth > 0) {
+          if (source[index] === '(') depth += 1
+          else if (source[index] === ')') depth -= 1
+          index += 1
+        }
+        out.push(source.slice(start, index))
+        cursor = index
+      }
+    }
+    const lines = statementsOf(code, 'memoriesRouter.').filter((s) => /^memoriesRouter\.(get|post|patch|delete|put)\(/.test(s))
+    a.ok(lines.length === 9, `时光记录路由条数不是 9（9 = 五条记录本体 + 四条图片）：${lines.length}`)
+    a.ok(lines.filter((s) => s.includes('photos')).length === 4, `图片路由不是四条：${lines.filter((s) => s.includes('photos')).length}`)
     for (const line of lines) {
       const parsers = line.match(/parseMemory[A-Za-z]*/g) ?? []
       a.ok(parsers.length === 1, `一条路由挂了 ${parsers.length} 个校验器（4.3.2 定下每路由只挂一个）：${line}`)
@@ -1697,14 +1726,15 @@ async function runSourceProbe(): Promise<void> {
     a.ok(!code.includes('memoriesRouter.put('), '路由表里出现了 PUT')
     a.ok(!/\brouter\.(get|post|patch|delete|put)\(/.test(code), '路由变量名与本文件声明的不一致（扫描器要跟着改）')
     const validation = stripComments(fs.readFileSync(path.join(srcDir, 'validation', 'memories.ts'), 'utf8'))
-    for (const name of ['parseMemoryListQuery', 'parseMemoryIdParam', 'parseMemoryCreate', 'parseMemoryUpdate']) {
+    for (const name of ['parseMemoryListQuery', 'parseMemoryIdParam', 'parseMemoryPhotoIdParam', 'parseMemoryCreate', 'parseMemoryUpdate']) {
       a.ok(validation.includes(`export const ${name}`), `校验层缺 ${name}`)
     }
-    a.ok((validation.match(/validate\(\{/g) ?? []).length === 4, `校验器数量不是 4：${(validation.match(/validate\(\{/g) ?? []).length}`)
+    a.ok((validation.match(/validate\(\{/g) ?? []).length === 5, `校验器数量不是 5：${(validation.match(/validate\(\{/g) ?? []).length}`)
     a.ok(!/defaultValue/.test(validation.slice(validation.indexOf('export const parseMemoryUpdate'), validation.indexOf('export const parseMemoryUpdate') + 1200)), 'PATCH 校验表里出现了 defaultValue（省略就会被当成提交）')
-    // 反向对照：串两个校验器的写法必须被抓出来
-    const doubled = "router.patch('/:id', parseMemoryIdParam, parseMemoryUpdate, handler)"
-    a.ok(((doubled.match(/parseMemory[A-Za-z]*/g) ?? []).length) === 2, '校验器计数扫描器形同虚设')
+    // 反向对照：串两个校验器的写法必须被抓出来，而且换行不能把它拆没（本轮新扫描器的代价）
+    const doubled = "memoriesRouter.patch('/:id',\n  parseMemoryIdParam,\n  parseMemoryUpdate,\n  handler)"
+    const doubledStatements = statementsOf(doubled, 'memoriesRouter.')
+    a.ok(doubledStatements.length === 1 && (doubledStatements[0].match(/parseMemory[A-Za-z]*/g) ?? []).length === 2, '跨行的校验器计数扫描器形同虚设')
   })
 
   await check('H4', '响应键集合双向断言：假行带内部列，读/写/删三条返回值都恰好十二键', async (a) => {
@@ -1730,9 +1760,19 @@ async function runSourceProbe(): Promise<void> {
     const view = readWebFile('views/MemoriesView.vue')
     const datetime = readWebFile('utils/datetime.ts')
     const gradients = readWebFile('data/gradients.ts')
+    const store = readWebFile('stores/user.ts')
     a.ok(/title\.length < 2/.test(view), '前端标题下限已不是 2 个字，本轮的 MEMORY_TITLE_MIN 需要复核')
     a.ok(/dateKey > todayIso\(\)/.test(view), '前端「不能记未来」的规则不在了，本轮的 requireMemoryDateKey 需要复核')
-    a.ok(/expGained: 0/.test(view), '前端补记仍会写非 0 经验，本轮「不写 exp_gained」的前提变了')
+    /* B4 起补记的唯一保存路径从视图移进 store.saveMemory：演示草稿硬编码 expGained: 0，
+       真实模式 POST/PATCH 包体不带 expGained（用户无从写奖励列）。盯住这条唯一路径即可。 */
+    const saveStart = store.indexOf('async function saveMemory(')
+    const saveEnd = store.indexOf('async function deleteMemory(', saveStart)
+    const saveBody = store.slice(saveStart, saveEnd < 0 ? store.length : saveEnd)
+    const expSites = saveBody.match(/expGained\s*[:=][^\n,]*/g) ?? []
+    a.ok(
+      expSites.length === 1 && /expGained: 0/.test(expSites[0]),
+      `前端补记经验口径漂移：saveMemory 里应只有一处 expGained 且为硬编码 0（演示草稿），真实包体不应出现 expGained；实测 ${JSON.stringify(expSites)}`
+    )
     a.ok(view.includes(MEMORY_DISPLAY_FALLBACKS.location) && view.includes(MEMORY_DISPLAY_FALLBACKS.note), '显示层兜底文案与前端不再同源')
     a.ok(datetime.includes('^(\\d{4})-(\\d{2})-(\\d{2})$'), '前端日期形状尺变了，MEMORY_DATE_PATTERN 需要复核')
     const keyBlock = gradients.slice(gradients.indexOf('export const coverGradients'), gradients.indexOf('} as const'))

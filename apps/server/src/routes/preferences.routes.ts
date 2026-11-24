@@ -28,8 +28,7 @@ import {
  * 这个 Router **不允许**用 `apiRouter.use('/preferences', …)` 直接挂：
  * 必须走 `routes/index.ts` 里的 `mountUserScopedRouter()`，由它先把 `requireTrustedUserActor`
  * 压在前缀上；漏掉守卫的写接口会让 `createApp()` 的装配期自检直接抛错、服务起不来。
- * 正式认证完成前，上面六条对任何请求都返回 501 `auth-not-implemented`——
- * 路由存在但能力不存在，这是本轮刻意的状态，不是漏配。
+ * 认证（阶段4.6）已落地：守卫只认会话 cookie，未认证请求一律 401 `identity-missing`。
  *
  * 每条路由**只挂一个**校验中间件：校验内核把归一化结果整体写进 req.validated，
  * 串两个校验器会让后挂的那个把前一个的来源清空（详见 validation/preferences.ts 头注释第 4 条）。

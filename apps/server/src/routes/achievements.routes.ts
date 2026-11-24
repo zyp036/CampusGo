@@ -25,8 +25,7 @@ import { parseAchievementBadgeParam, parseNoInputEvaluate } from '../validation/
  * 这个 Router **不允许**用 `apiRouter.use('/achievements', …)` 直接挂：
  * 必须走 `routes/index.ts` 里的 `mountUserScopedRouter()`，由它先把 `requireTrustedUserActor`
  * 压在前缀上；漏掉守卫的写接口会让 `createApp()` 的装配期自检直接抛错、服务起不来。
- * 正式认证完成前，上面四条对任何请求都返回 501 `auth-not-implemented`——
- * 路由存在但能力不存在，这是本轮刻意的状态，不是漏配。
+ * 认证（阶段4.6）已落地：守卫只认会话 cookie，未认证请求一律 401 `identity-missing`。
  *
  * 四条里**只有一条 POST**，而且它连徽章 id 都不收：
  * 指令「不允许客户端直接提交一个徽章ID就认定用户获得该徽章」在这里的实现方式是
@@ -35,8 +34,8 @@ import { parseAchievementBadgeParam, parseNoInputEvaluate } from '../validation/
  *
  * `parseNoInputEvaluate` 必须挂在 POST 上：控制器里 `parseNoInputEvaluate.input(req)` 读的是
  * 校验中间件写进 `req.validated` 的结果，中间件没跑就会 500 `validation-not-run`
- * （`validate.ts` 里那条「那是后端自己的问题」）。这条挂载今天被 501 守卫挡在后面看不见，
- * 探针 G5 用「不带校验器的同构链」把它复现出来，免得等阶段4.6 接上认证才炸。
+ * （`validate.ts` 里那条「那是后端自己的问题」）。这条挂载当年被 501 守卫挡在后面看不见，
+ * 探针 G5 用「不带校验器的同构链」把它复现出来；认证接上后这道保险仍由探针盯着。
  */
 const achievementsRouter = Router()
 

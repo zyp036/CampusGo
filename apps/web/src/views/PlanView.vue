@@ -1,21 +1,48 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ListChecks, LoaderCircle, Compass, RefreshCw, RotateCcw, Sparkles, TriangleAlert } from '@lucide/vue'
+import {
+  Check,
+  Compass,
+  FolderOpen,
+  ListChecks,
+  LoaderCircle,
+  LogIn,
+  Pencil,
+  RefreshCw,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+  TriangleAlert,
+  X
+} from '@lucide/vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
-import PlanResultCard from '@/components/plan/PlanResultCard.vue'
+import AiPlanResultCard from '@/components/plan/AiPlanResultCard.vue'
 import PlacesPanel from '@/components/places/PlacesPanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import ChipGroup from '@/components/ui/ChipGroup.vue'
-import DemoTag from '@/components/ui/DemoTag.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { DEMO_NOTICE_AI } from '@/data/demoNotice'
-import { planOptionGroups, planTemplates } from '@/data/plan'
+import { aiApi } from '@/api'
+import { planOptionGroups } from '@/data/plan'
 import type { PlanOptionGroup } from '@/data/plan'
-import { buildDemoPlan, type PlanFailure, type PlanOutcome } from '@/utils/demoPlanner'
-import type { DemoPlan } from '@/types/models'
+import { useContentStore } from '@/stores/content'
+import { useUserStore } from '@/stores/user'
+import type { AiPlanResultDto, AiPlanResponseData } from '@/types/api'
+import type { UserPlanDto } from '@/types/api'
+
+/**
+ * 生活规划页：前端规则模板引擎按六组条件匹配出一段安排（不是 AI，也不是接口返回）。
+ * 地点取自核实存在的江苏大学与镇江地点，价格与时长是规则估算。生成的规划可以保存：
+ * 真实模式登录后写服务端（刷新后还在），演示模式只存本机草稿（刷新即重置，界面如实说明）。
+ */
+
+const route = useRoute()
+const content = useContentStore()
+const user = useUserStore()
+
+const isReal = computed(() => content.mode === 'real')
 
 /** 六组条件的默认选择，模拟一个已经把偏好调顺的老用户 */
 const selections = reactive<Record<string, string[]>>({
@@ -54,10 +81,7 @@ const filledGroupCount = computed(
   () => planOptionGroups.filter((group) => (selections[group.id] ?? []).length > 0).length
 )
 
-const templateCount = planTemplates.length
-
-/* 从地点详情「带着这个方向去规划」跳过来时，用 query.type 预填活动类型 */
-const route = useRoute()
+/* 从地点详情「根据这个去规划」跳过来时，用 query 预填多组条件 */
 const typeGroup = planOptionGroups.find((group) => group.id === 'type')
 const VALID_TYPE_IDS = new Set((typeGroup?.options ?? []).map((option) => option.id))
 
@@ -74,6 +98,56 @@ const incomingDirectionLabel = computed(() => {
   if (!id) return ''
   return typeGroup?.options.find((option) => option.id === id)?.label ?? ''
 })
+
+/** 从地点带过来的偏好地点名称 */
+const preferredPlace = ref<string | null>(null)
+
+/** 校验单个选项 id 是否属于对应分组 */
+function validOption(groupId: string, optionId: string): boolean {
+  const group = planOptionGroups.find((g) => g.id === groupId)
+  return group?.options.some((o) => o.id === optionId) ?? false
+}
+
+/**
+ * 从 route.query 读取地点带过来的条件并一次性填入 selections。
+ * 支持的 query 参数：type / mood / interest(逗号分隔) / company / budget / place
+ */
+function applyPlaceQuery(): void {
+  const q = route.query
+  let applied = false
+
+  if (typeof q.type === 'string' && validOption('type', q.type)) {
+    selections.type = [q.type]
+    applied = true
+  }
+  if (typeof q.mood === 'string' && validOption('mood', q.mood)) {
+    selections.mood = [q.mood]
+    applied = true
+  }
+  if (typeof q.interest === 'string') {
+    const ids = q.interest.split(',').filter((id) => validOption('interest', id))
+    if (ids.length > 0) {
+      selections.interest = ids.slice(0, 4)
+      applied = true
+    }
+  }
+  if (typeof q.company === 'string' && validOption('company', q.company)) {
+    selections.company = [q.company]
+    applied = true
+  }
+  if (typeof q.budget === 'string' && validOption('budget', q.budget)) {
+    selections.budget = [q.budget]
+    applied = true
+  }
+  if (typeof q.place === 'string' && q.place.trim().length > 0) {
+    preferredPlace.value = q.place.trim()
+    applied = true
+  }
+
+  if (applied) {
+    incomingDirection.value = typeFromQuery()
+  }
+}
 
 watch(
   () => route.query.type,
@@ -95,124 +169,249 @@ watch(
   }
 )
 
-/* 生成流程：idle → loading → ready / failed，条件一变就退回 idle */
-type Phase = 'idle' | 'loading' | 'ready' | 'failed'
-const phase = ref<Phase>('idle')
-const plan = ref<DemoPlan | null>(null)
-const candidateCount = ref(0)
-const failure = ref<PlanFailure | null>(null)
-const pick = ref(0)
+/** 组件挂载时把地点带过来的条件一次填完 */
+onMounted(() => {
+  applyPlaceQuery()
+})
 
-/** 「换一条」的两步状态：先按同 seed 重算，再往后取一条 */
-const swapStage = ref<'idle' | 'advanced'>('idle')
-const swapNotice = ref<string | null>(null)
+/** 生成规划相关状态 */
+const aiLoading = ref(false)
+const aiResult = ref<AiPlanResponseData | null>(null)
+const aiError = ref<string | null>(null)
 
-let timer: ReturnType<typeof setTimeout> | undefined
+/** 当前展示的这份规划是否已保存（保存后按钮变「已保存」，条件一改就重置） */
+const savedPlanId = ref<string | null>(null)
+const saving = ref(false)
+const saveFeedback = ref<{ tone: 'success' | 'danger' | 'info'; text: string } | null>(null)
 
-function clearTimer(): void {
-  if (timer !== undefined) {
-    clearTimeout(timer)
-    timer = undefined
+/** 生成规划：统一调 AI 接口，后端自动降级到规则引擎 */
+async function generatePlan(): Promise<void> {
+  if (!canGenerate.value || aiLoading.value) return
+  aiLoading.value = true
+  aiError.value = null
+  aiResult.value = null
+  savedPlanId.value = null
+  saveFeedback.value = null
+
+  try {
+    const request = buildAiRequest()
+    const result = await aiApi.generatePlan(request)
+    aiResult.value = result.data
+  } catch (error) {
+    aiError.value = error instanceof Error ? error.message : '规划生成失败，请稍后重试'
+  } finally {
+    aiLoading.value = false
   }
 }
 
-onBeforeUnmount(clearTimer)
-
-/** 600ms 只是让「正在编排」这件事可见，并没有真的在等网络 */
-function runGenerate(onSettled?: (outcome: PlanOutcome) => void): void {
-  if (!canGenerate.value) return
-  clearTimer()
-  phase.value = 'loading'
-  failure.value = null
-  swapNotice.value = null
-  timer = setTimeout(() => {
-    const outcome = buildDemoPlan(selections, pick.value)
-    if (outcome.status === 'ok') {
-      plan.value = outcome.plan
-      candidateCount.value = outcome.candidateCount
-      phase.value = 'ready'
-    } else {
-      plan.value = null
-      failure.value = outcome.failure
-      phase.value = 'failed'
-    }
-    onSettled?.(outcome)
-  }, 600)
-}
-
-/** 手动点「生成规划」＝重新走一遍，换一条的节奏从头开始 */
-function generatePlan(): void {
-  swapStage.value = 'idle'
-  runGenerate()
-}
-
-/**
- * 引擎是确定性的：同一组条件、同一个取法必然得到同一条结果。
- * 所以第一次点「换一条」只是重算并如实说明「还是它」，第二次才把位置往后挪。
- */
-function swapPlan(): void {
-  if (swapStage.value === 'idle') {
-    swapStage.value = 'advanced'
-    runGenerate((outcome) => {
-      if (outcome.status !== 'ok' || !plan.value) return
-      swapNotice.value = `条件没变、取的位置也没变（第 ${pick.value + 1} 条，共 ${outcome.candidateCount} 条候选），所以结果和刚才一致：「${plan.value.title}」。再点一次才会往后取下一条候选。`
-    })
-    return
-  }
-
-  const before = plan.value?.title ?? ''
-  pick.value += 1
-  runGenerate(() => {
-    if (!plan.value) return
-    swapNotice.value =
-      plan.value.title === before
-        ? `候选只有 ${candidateCount.value} 条，往后取又绕回同一条：「${plan.value.title}」。把时间或预算放宽一档才会有新候选。`
-        : `已换成「${plan.value.title}」——同一组条件的第 ${pick.value + 1} 条候选（共 ${candidateCount.value} 条）。上一条是「${before}」。`
-  })
+/** 换一条：重新调用 AI 接口（后端会返回不同的候选） */
+async function swapPlan(): Promise<void> {
+  if (aiLoading.value) return
+  await generatePlan()
 }
 
 function resetSelections(): void {
   planOptionGroups.forEach((group) => {
     selections[group.id] = []
   })
-  clearTimer()
-  phase.value = 'idle'
-  plan.value = null
-  failure.value = null
-  pick.value = 0
-  swapStage.value = 'idle'
-  swapNotice.value = null
+  aiResult.value = null
+  aiError.value = null
+  savedPlanId.value = null
+  saveFeedback.value = null
 }
 
-/** 条件一改，「换一条」的节奏重新计：先重算、再往后取 */
+/** 条件一改，已保存标记也清掉（载入保存的规划时除外） */
+const restoringSelections = ref(false)
 watch(selections, () => {
-  swapStage.value = 'idle'
+  if (restoringSelections.value) {
+    restoringSelections.value = false
+    return
+  }
+  savedPlanId.value = null
 }, { deep: true })
 
-const statusText = computed(() => {
-  if (phase.value === 'loading') return '正在编排'
-  if (phase.value === 'ready') return '已生成'
-  if (phase.value === 'failed') return '无法生成'
-  return '尚未生成'
+/** 把当前选择快照成后端 conditions（只留非空组，键是表单组 id，值是选项 id） */
+function conditionsSnapshot(): Record<string, string[]> {
+  const snapshot: Record<string, string[]> = {}
+  planOptionGroups.forEach((group) => {
+    const chosen = selections[group.id] ?? []
+    if (chosen.length > 0) snapshot[group.id] = [...chosen]
+  })
+  return snapshot
+}
+
+/* ---- 我的规划：载入 / 重命名 / 删除 ---- */
+const renamingId = ref<string | null>(null)
+const renameText = ref('')
+const deletingId = ref<string | null>(null)
+const manageBusyId = ref<string | null>(null)
+const manageFeedback = ref<{ tone: 'success' | 'danger'; text: string } | null>(null)
+
+function loadSavedPlan(item: UserPlanDto): void {
+  restoringSelections.value = true
+  planOptionGroups.forEach((group) => {
+    selections[group.id] = [...(item.conditions[group.id] ?? [])]
+  })
+  aiResult.value = {
+    source: 'rule',
+    plan: user.planResultOf(item) as unknown as AiPlanResultDto,
+    fallback: true,
+    fallbackReason: '已保存的规划'
+  } as AiPlanResponseData
+  savedPlanId.value = item.planId
+  saveFeedback.value = { tone: 'info', text: `已载入保存的规划「${item.title}」。` }
+}
+
+function startRename(item: UserPlanDto): void {
+  renamingId.value = item.planId
+  renameText.value = item.title
+  deletingId.value = null
+}
+
+function cancelRename(): void {
+  renamingId.value = null
+  renameText.value = ''
+}
+
+async function confirmRename(item: UserPlanDto): Promise<void> {
+  const title = renameText.value.trim()
+  if (!title) return
+  manageBusyId.value = item.planId
+  const result = await user.renamePlan(item.planId, title)
+  manageBusyId.value = null
+  renamingId.value = null
+  renameText.value = ''
+  manageFeedback.value = { tone: result.ok ? 'success' : 'danger', text: result.message }
+  if (result.ok && savedPlanId.value === item.planId) {
+    saveFeedback.value = { tone: 'success', text: result.message }
+  }
+}
+
+function startDelete(item: UserPlanDto): void {
+  deletingId.value = item.planId
+  renamingId.value = null
+}
+
+function cancelDelete(): void {
+  deletingId.value = null
+}
+
+async function confirmDelete(item: UserPlanDto): Promise<void> {
+  manageBusyId.value = item.planId
+  const result = await user.deletePlan(item.planId)
+  manageBusyId.value = null
+  deletingId.value = null
+  manageFeedback.value = { tone: result.ok ? 'success' : 'danger', text: result.message }
+  if (result.ok && savedPlanId.value === item.planId) {
+    savedPlanId.value = null
+  }
+}
+
+function retryLoadPlans(): void {
+  void user.loadPlans()
+}
+
+onMounted(() => {
+  if (isReal.value && user.isAuthenticated) void user.loadPlans()
 })
 
-const statusTone = computed(() => {
-  if (phase.value === 'ready') return 'success' as const
-  if (phase.value === 'failed') return 'danger' as const
-  return 'neutral' as const
+watch(
+  () => [content.mode, user.isAuthenticated] as const,
+  ([mode, authed]) => {
+    if (mode === 'real' && authed) void user.loadPlans()
+  }
+)
+
+function formatPlanTime(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+/* ---- AI 智能规划 ---- */
+const aiEnabled = ref(false)
+const aiConfigured = ref(false)
+
+/** 查询 AI 服务状态（公开接口，不需要登录） */
+async function fetchAiStatus(): Promise<void> {
+  try {
+    const result = await aiApi.getStatus()
+    aiEnabled.value = result.data.enabled
+    aiConfigured.value = result.data.configured
+  } catch {
+    aiEnabled.value = false
+    aiConfigured.value = false
+  }
+}
+
+/** 将前端选择表转换为 AI 请求格式 */
+function buildAiRequest(): Record<string, unknown> {
+  return {
+    time: selections.time?.[0],
+    budget: selections.budget?.[0],
+    mood: selections.mood?.[0],
+    interests: selections.interest ?? [],
+    company: selections.company?.[0],
+    types: selections.type ?? [],
+    customRequest: '',
+    preferredPlace: preferredPlace.value ?? undefined
+  }
+}
+
+/** AI 结果是否是降级的规则引擎 */
+const aiIsFallback = computed(() => aiResult.value?.source === 'rule')
+
+/** AI 结果的规划数据 */
+const aiPlanData = computed<AiPlanResultDto | null>(() => {
+  if (!aiResult.value) return null
+  return aiResult.value.plan
+})
+
+/** 保存 AI 生成的规划 */
+async function saveAiPlan(): Promise<void> {
+  if (!aiPlanData.value || saving.value) return
+  if (isReal.value && !user.isAuthenticated) {
+    saveFeedback.value = { tone: 'info', text: '登录后才能把规划保存到服务端。先去登录或注册，再回来保存。' }
+    return
+  }
+  saving.value = true
+  saveFeedback.value = null
+  
+  // 将 AI 结果转换为保存格式
+  const result = await user.savePlan({
+    title: aiPlanData.value.title,
+    conditions: conditionsSnapshot(),
+    result: aiPlanData.value as unknown as Record<string, unknown>
+  })
+  
+  saving.value = false
+  if (result.ok) {
+    savedPlanId.value = result.id ?? null
+    saveFeedback.value = { tone: 'success', text: result.message }
+  } else {
+    saveFeedback.value = { tone: 'danger', text: result.message }
+  }
+}
+
+onMounted(() => {
+  if (isReal.value && user.isAuthenticated) void user.loadPlans()
+  void fetchAiStatus()
 })
 </script>
 
 <template>
   <PageContainer
-    eyebrow="模块二 · AI生活规划"
+    eyebrow="模块二 · 生活规划"
     title="把「不知道干什么」变成一条时间线"
-    description="选六个条件，演示规则引擎按时间、预算、心情和人数给出一段可以执行的安排。"
+    description="选六个条件，AI 会按你的条件生成个性化安排，如果 AI 暂时不可用会自动切换到规则引擎，登录后可以保存。"
   >
     <template #actions>
       <div class="flex items-center gap-2">
         <StatusBadge tone="brand">{{ filledGroupCount }}/{{ planOptionGroups.length }} 组已填</StatusBadge>
-        <StatusBadge :tone="statusTone" :dot="phase === 'loading'">{{ statusText }}</StatusBadge>
+        <StatusBadge v-if="aiEnabled" tone="success" class="!bg-ai-50 !text-ai-700">
+          <Sparkles :size="12" class="inline" aria-hidden="true" />
+          AI 可用
+        </StatusBadge>
       </div>
     </template>
 
@@ -221,7 +420,7 @@ const statusTone = computed(() => {
       class="cg-card-flat mb-4 flex flex-wrap items-center gap-2 rounded-inner bg-brand-50 px-3.5 py-2.5 text-caption font-medium text-brand-700"
     >
       <Compass :size="14" aria-hidden="true" />
-      从地点列表带过来的方向：{{ incomingDirectionLabel }}。觉得不合适直接在下面「活动类型」里改。
+      已根据地点信息自动填入条件（方向：{{ incomingDirectionLabel }}），不合适可以直接在下面改。
     </div>
 
     <div class="grid gap-4 lg:grid-cols-5">
@@ -259,15 +458,15 @@ const statusTone = computed(() => {
               data-testid="plan-generate"
               variant="gradient"
               size="md"
-              :icon="phase === 'loading' ? LoaderCircle : Sparkles"
-              :loading="phase === 'loading'"
+              :icon="Sparkles"
               :disabled="!canGenerate"
+              :loading="aiLoading"
               @click="generatePlan"
             >
-              {{ phase === 'loading' ? '正在编排…' : plan ? '重新生成' : '生成规划' }}
+              {{ aiLoading ? 'AI 思考中…' : (aiResult ? '重新生成' : '生成规划') }}
             </BaseButton>
             <BaseButton
-              v-if="phase === 'ready'"
+              v-if="aiResult"
               variant="soft"
               size="md"
               :icon="RefreshCw"
@@ -289,21 +488,6 @@ const statusTone = computed(() => {
           >
             还差：{{ missingRequired.join('、') }}。这两项没法定时间线。
           </p>
-
-          <p
-            v-if="swapNotice"
-            class="mt-3 rounded-inner bg-accent-50 px-3.5 py-2.5 text-caption font-medium leading-relaxed text-accent-700"
-            role="status"
-            aria-live="polite"
-            data-testid="plan-swap-notice"
-          >
-            {{ swapNotice }}
-          </p>
-
-          <DemoTag
-            class="mt-3"
-            :text="DEMO_NOTICE_AI + '；条件与结果只保存在当前页面，刷新即重置'"
-          />
         </BaseCard>
       </div>
 
@@ -326,53 +510,222 @@ const statusTone = computed(() => {
           </p>
         </BaseCard>
 
-        <p
-          v-if="phase === 'loading'"
-          class="cg-card flex items-center gap-2.5 p-5 text-body-sm text-ink-500"
-          role="status"
-          aria-live="polite"
-          data-testid="plan-loading"
-        >
-          <LoaderCircle :size="16" class="animate-spin text-brand-500" aria-hidden="true" />
-          正在按条件筛选演示规则库…
-        </p>
-
+        <!-- AI 错误提示 -->
         <div
-          v-else-if="phase === 'failed'"
-          class="cg-card border-danger-200 bg-danger-50 p-5"
+          v-if="aiError"
+          class="cg-card border-warning-200 bg-warning-50 p-5"
           role="status"
           aria-live="polite"
-          data-testid="plan-error"
+          data-testid="ai-plan-error"
         >
-          <p class="flex items-center gap-2 text-body-sm font-semibold text-danger-600">
+          <p class="flex items-center gap-2 text-body-sm font-semibold text-warning-700">
             <TriangleAlert :size="15" aria-hidden="true" />
-            {{ failure?.reason }}
+            规划生成失败
           </p>
-          <p class="mt-2 text-caption leading-relaxed text-ink-500">{{ failure?.hint }}</p>
-          <p class="mt-2.5 border-t border-danger-200 pt-2.5 text-caption leading-relaxed text-ink-500">
-            上面这条原因是演示规则引擎按时间、预算与命中数算出来的判断，不是模型给的结论；
-            候选取自 <code class="font-mono text-[11px]">data/plan.ts</code> 的 {{ templateCount }} 条示例安排，
-            真实 AI 推荐在阶段5 接入。
-          </p>
-          <DemoTag class="mt-3" :text="DEMO_NOTICE_AI" />
+          <p class="mt-2 text-caption leading-relaxed text-ink-600">{{ aiError }}</p>
+          <div class="mt-3">
+            <BaseButton variant="soft" size="sm" :icon="RefreshCw" @click="generatePlan">
+              重试
+            </BaseButton>
+          </div>
         </div>
 
-        <PlanResultCard
-          v-else-if="phase === 'ready' && plan"
-          :plan="plan"
-          :candidate-count="candidateCount"
-          data-testid="plan-result"
-        />
+        <!-- 规划结果展示（AI 或降级规则引擎） -->
+        <template v-if="aiPlanData">
+          <AiPlanResultCard
+            :plan="aiPlanData"
+            :source="aiResult!.source"
+            :fallback="aiIsFallback"
+            :fallback-reason="aiIsFallback ? (aiResult as any).fallbackReason : undefined"
+            :latency-ms="'latencyMs' in aiResult! ? (aiResult as any).latencyMs : undefined"
+            :tokens="'tokens' in aiResult! ? (aiResult as any).tokens : undefined"
+            :saving="saving"
+            :saved="savedPlanId !== null"
+            data-testid="ai-plan-result"
+            @save="saveAiPlan"
+          />
+          <p
+            v-if="saveFeedback"
+            class="rounded-inner px-3.5 py-2.5 text-caption font-medium leading-relaxed"
+            :class="{
+              'bg-success-50 text-success-600': saveFeedback.tone === 'success',
+              'bg-danger-50 text-danger-600': saveFeedback.tone === 'danger',
+              'bg-brand-50 text-brand-700': saveFeedback.tone === 'info'
+            }"
+            role="status"
+            aria-live="polite"
+            data-testid="ai-plan-save-feedback"
+          >
+            {{ saveFeedback.text }}
+            <RouterLink
+              v-if="saveFeedback.tone === 'info' && isReal && !user.isAuthenticated"
+              :to="{ name: 'login' }"
+              class="ml-1 font-semibold underline"
+            >
+              去登录
+            </RouterLink>
+          </p>
+        </template>
 
         <BaseCard v-else variant="flat">
           <SectionHeader title="结果会出现在这里" description="现在还没有生成" />
           <p class="text-body-sm leading-relaxed text-ink-500">
-            选好时间与心情之后点「生成规划」。演示规则库里现在有
-            {{ templateCount }} 条校内和镇江周边的安排，会按兴趣、类型、预算和时长挑一条最贴合的，
-            并把选择理由写出来。
+            选好时间与心情之后点「生成规划」。AI 会按你的条件生成个性化安排，
+            如果 AI 暂时不可用会自动切换到规则引擎。
           </p>
         </BaseCard>
       </div>
+    </div>
+
+    <!-- 我的规划：保存过的规划可以载入、重命名、删除 -->
+    <div class="mt-6">
+      <BaseCard>
+        <SectionHeader
+          title="我的规划"
+          :description="isReal
+            ? '登录后保存在服务端，刷新后还在；可以载入重新查看、重命名或删除。'
+            : '演示模式只存本机草稿，刷新即重置，不会写到服务端。'"
+        >
+          <template #action>
+            <StatusBadge tone="brand" data-testid="plan-saved-count">已保存 {{ user.savedPlanCount }} 份</StatusBadge>
+          </template>
+        </SectionHeader>
+
+        <!-- 真实模式未登录：如实提示，不伪造已保存列表 -->
+        <div
+          v-if="isReal && !user.isAuthenticated"
+          class="rounded-inner bg-surface-muted px-4 py-6 text-center"
+          data-testid="plan-manage-login"
+        >
+          <p class="text-body-sm leading-relaxed text-ink-500">
+            登录后才能保存和管理规划。现在生成的结果只留在当前页面，刷新即重置。
+          </p>
+          <BaseButton class="mt-3" variant="gradient" size="sm" :icon="LogIn" :to="{ name: 'login' }">
+            去登录 / 注册
+          </BaseButton>
+        </div>
+
+        <template v-else>
+          <p
+            v-if="manageFeedback"
+            class="mb-3 rounded-inner px-3.5 py-2.5 text-caption font-medium"
+            :class="manageFeedback.tone === 'success' ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600'"
+            role="status"
+            data-testid="plan-manage-feedback"
+          >
+            {{ manageFeedback.text }}
+          </p>
+
+          <div v-if="user.plansLoading" class="flex items-center gap-2.5 py-4 text-body-sm text-ink-500" data-testid="plan-manage-loading">
+            <LoaderCircle :size="16" class="animate-spin text-brand-500" aria-hidden="true" />
+            正在从服务端取回我的规划…
+          </div>
+
+          <div v-else-if="user.plansFailed" class="rounded-inner bg-danger-50 px-4 py-5 text-center" data-testid="plan-manage-failed">
+            <p class="text-body-sm text-danger-600">{{ user.plansFailed }}</p>
+            <BaseButton class="mt-3" variant="outline" size="sm" :icon="RefreshCw" @click="retryLoadPlans">
+              重新取我的规划
+            </BaseButton>
+          </div>
+
+          <div
+            v-else-if="user.savedPlanCount === 0"
+            class="rounded-inner bg-surface-muted px-4 py-6 text-center"
+            data-testid="plan-manage-empty"
+          >
+            <p class="text-body-sm leading-relaxed text-ink-500">
+              还没有保存过规划。在上面生成一段安排后点「保存这份规划」，就会出现在这里。
+            </p>
+          </div>
+
+          <ul v-else class="space-y-2.5" data-testid="plan-manage-list">
+            <li
+              v-for="item in user.savedPlans"
+              :key="item.planId"
+              class="rounded-inner border border-line bg-surface-card px-3.5 py-3"
+              data-testid="plan-manage-item"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <template v-if="renamingId === item.planId">
+                    <input
+                      v-model="renameText"
+                      type="text"
+                      maxlength="80"
+                      class="cg-input h-9 w-full max-w-xs"
+                      aria-label="规划新名字"
+                      data-testid="plan-rename-input"
+                      @keyup.enter="confirmRename(item)"
+                    />
+                  </template>
+                  <template v-else>
+                    <p class="truncate text-body-sm font-semibold text-ink-900">{{ item.title }}</p>
+                    <p class="mt-0.5 text-caption text-ink-400">保存于 {{ formatPlanTime(item.createdAt) }}</p>
+                  </template>
+                </div>
+
+                <div class="flex shrink-0 items-center gap-1.5">
+                  <template v-if="renamingId === item.planId">
+                    <BaseButton
+                      variant="gradient"
+                      size="sm"
+                      :icon="Check"
+                      :loading="manageBusyId === item.planId"
+                      :disabled="!renameText.trim()"
+                      data-testid="plan-rename-confirm"
+                      @click="confirmRename(item)"
+                    >
+                      确定
+                    </BaseButton>
+                    <BaseButton variant="ghost" size="sm" :icon="X" @click="cancelRename">取消</BaseButton>
+                  </template>
+                  <template v-else-if="deletingId === item.planId">
+                    <span class="text-caption font-medium text-danger-600">确认删除？</span>
+                    <BaseButton
+                      variant="danger"
+                      size="sm"
+                      :icon="Trash2"
+                      :loading="manageBusyId === item.planId"
+                      data-testid="plan-delete-confirm"
+                      @click="confirmDelete(item)"
+                    >
+                      删除
+                    </BaseButton>
+                    <BaseButton variant="ghost" size="sm" @click="cancelDelete">取消</BaseButton>
+                  </template>
+                  <template v-else>
+                    <BaseButton
+                      variant="soft"
+                      size="sm"
+                      :icon="FolderOpen"
+                      data-testid="plan-load"
+                      @click="loadSavedPlan(item)"
+                    >
+                      载入
+                    </BaseButton>
+                    <BaseButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="Pencil"
+                      aria-label="重命名"
+                      data-testid="plan-rename"
+                      @click="startRename(item)"
+                    />
+                    <BaseButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="Trash2"
+                      aria-label="删除"
+                      data-testid="plan-delete"
+                      @click="startDelete(item)"
+                    />
+                  </template>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </template>
+      </BaseCard>
     </div>
 
     <!-- 校园地点：浏览、筛选、收藏、看详情，选中的方向可以直接预填上面的活动类型 -->

@@ -126,6 +126,43 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
 }
 
 /* ------------------------------------------------------------------ */
+/* 一键生成体验账号                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface DemoAccountResult {
+  userCode: string
+  password: string
+  nickname: string
+}
+
+/** 体验账号统一口令 */
+const DEMO_ACCOUNT_PASSWORD = 'campusgo2026'
+
+/**
+ * 一键生成体验账号：自动创建新用户，口令固定为 campusgo2026。
+ * 昵称用「拾光体验官」+ 4 位随机数，避免重复又不用真实姓名。
+ * 每个体验账号的数据（收藏、记忆、任务进度等）完全独立，互不影响。
+ */
+export async function createDemoAccount(): Promise<DemoAccountResult> {
+  const suffix = String(Math.floor(1000 + Math.random() * 9000))
+  const nickname = `拾光体验官${suffix}`
+
+  const result = await registerUser({
+    nickname,
+    password: DEMO_ACCOUNT_PASSWORD,
+    school: '江苏大学'
+  })
+
+  logger.info('auth.demo-account', { userCode: result.userCode })
+
+  return {
+    userCode: result.userCode,
+    password: DEMO_ACCOUNT_PASSWORD,
+    nickname: result.nickname
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* 登录                                                                */
 /* ------------------------------------------------------------------ */
 

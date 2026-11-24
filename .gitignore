@@ -23,6 +23,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# ---- 用户上传的生活记录图片（本机数据，不进 Git） ----
+apps/server/storage/
+
 # ---- Test / coverage ----
 coverage/
 .vitest/

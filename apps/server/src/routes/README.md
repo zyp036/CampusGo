@@ -78,20 +78,22 @@ mountUserScopedRouter(apiRouter, '/achievements', achievementsRouter) // 阶段4
 mountUserScopedRouter(apiRouter, '/memories', memoriesRouter)         // 阶段4.3.6，同一个写法
 mountUserScopedRouter(apiRouter, '/activities', activitiesRouter)     // 阶段4.3.7，同一个写法
 mountUserScopedRouter(apiRouter, '/points', pointsRouter)             // 阶段4.3.8，同一个写法（两条只读 GET）
+mountUserScopedRouter(apiRouter, '/plans', plansRouter)               // 阶段9，同一个写法（规则规划保存）
 ```
 
-守卫先压在前缀上，所以正式认证（阶段4.6）落地之前，这二十九条（偏好六条 + 收藏四条 + 任务四条 + 徽章四条 + 记录五条 + 报名四条 + 一致性两条）
-对任何真实请求都返回
-501 `NOT_IMPLEMENTED` + `detail.reason = 'auth-not-implemented'`；接口逻辑本身是写完的，
-认证一接上就生效，路由表这一行不用再动。以后新增用户级模块**必须**沿用这个写法，
+守卫先压在前缀上。认证（阶段4.6）已落地：用户级接口只认会话 cookie，
+未认证的真实请求一律返回 401 `UNAUTHORIZED` + `detail.reason = 'identity-missing'`。
+以后新增用户级模块**必须**沿用这个写法，
 漏挂守卫的写接口会让 `createApp()` 的启动自检 `assertUserWriteBoundary()` 直接抛错。
 包体或查询串里带 `userId` / `userCode` 之类身份字段，会在进业务之前被
-`rejectIdentityInInput()` 拒成 400 `identity-in-input`。
-`/api` 之下现在共 37 条、算上 `GET /` 全站 38 条；带守卫的**写**路由 **14 条**
-（偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 3 + 报名 2）——阶段4.3.8 两条都是只读，
-**这个数字没有变**，这个数字由 `assertUserWriteBoundary()` 与 `probe:identity` 双向盯着。
+`rejectIdentityInInput()` 拒成 400 `identity-in-input`（真实路由上包体未知字段先被
+`validate()` 拒成 400 `validation-failed`，两种结局都是 400 且零写入）。
+`/api` 之下现在共 56 条、算上 `GET /` 全站 57 条；**写**路由 **25 条**
+（3 条公开认证：注册/登录/登出 + 22 条带身份守卫：偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 3 + 报名 2 + 主办 3 + 规划 3 + 资料/密码 2）——
+这个数字由 `assertUserWriteBoundary()` 与 `probe:identity` 双向盯着。
 
-公开九条里的后六条（`/api/places` 起、到 `/api/badges/:id`）是阶段3.4.2 的第一批真实数据接口，
+公开只读 GET 共十条，其中 `/api/places` 到 `/api/badges/:id` 这六条是阶段3.4.2 的第一批真实数据接口
+（另外四条是健康两条与天气两条），
 数据一律由 Prisma 读 MySQL 的
 `cg_campus_place` / `cg_challenge` / `cg_badge`，没有任何硬编码数组兜底：
 库里为空时列表如实返回 `items: []` 且 `total: 0`。字段与错误口径见根 README
@@ -105,11 +107,11 @@ mountUserScopedRouter(apiRouter, '/points', pointsRouter)             // 阶段4
 | 阶段 | 模块 | 预定一级前缀 |
 | --- | --- | --- |
 | 4 | 用户与校园地点、收藏 | `/users`、`/campuses`（`/places` 已在 3.4.2 落地，收藏另开 `/preferences` 与 `/favorites`，见上一节） |
-| 5 | AI 行程规划 | `/plans` |
-| 6 | 探索与地图 | `/explore` |
+| 5 | AI 行程规划（AI 暂缓 DEFERRED） | `/plans`（阶段9 已按**规则规划**落地五条；AI 能力未接入，`AI_ENABLED=false`） |
+| 6 | 探索与地图（已取消） | `/explore`（最终收尾移除独立 Explore 页与地图，地点数据保留在 `/places`） |
 | 7 | 任务、积分、成就 | `/tasks`（4.3.4 已落地）、`/achievements`（4.3.5 已落地）、积分侧 4.3.8 落了**只读**的 `/points` 两条（不含任何发放/修复接口）；等级门槛仍在前端 `stores/user.ts:20`，后端下发属阶段7 |
 | 8 | 生活记忆与个人中心 | `/memories`（阶段4.3.6 已落地，提前于原定的阶段8）、`/profile` |
-| 9 | 兴趣搭子 | `/partners`（活动**定义**的读接口仍归它）；用户维度的报名写接口另开 `/activities`，阶段4.3.7 已落地 |
+| 9 | 兴趣搭子 | `/partners`（阶段9 已落地六条：公开读两条 + 主办管理三条 + 详情，混合模块）；用户维度的报名写接口另开 `/activities`，阶段4.3.7 已落地 |
 
 下面几处与旧预留表的差异，是有意为之，不是笔误：
 
@@ -127,7 +129,7 @@ mountUserScopedRouter(apiRouter, '/points', pointsRouter)             // 阶段4
   两条都提前到阶段4.3 落地，因为 4.3.4 / 4.3.5 正是这两个主题；已公开的徽章定义读接口仍是 `/api/badges`。
   注意 `/achievements` 与 `/badges` 是**两个前缀**，不合并：`/badges/mine` 会被已验收的
   `/badges/:id` 抢先匹配成 `id = mine`，靠注册顺序才不出错的写法不进这个项目。
-- 报名没有挂在预留的 `/partners` 下面，另开 `/activities`：`/partners` 的语义是「兴趣搭子/活动**发现**」，对应的是公开的活动定义读接口（尚未落地）；而 `POST/DELETE /api/activities/:id` 是「**我**对某个活动的报名」，必须整片压在身份守卫后面。混在一个前缀里会让 `/partners/:id` 这种公开读路径和写路径共用守卫，或者反过来让写接口漏守卫——两种都不做。同一个道理见上面 `/achievements` 与 `/badges` 不合并那条。
+- 报名没有挂在预留的 `/partners` 下面，另开 `/activities`：`/partners` 的语义是「兴趣搭子/活动**发现**」，对应的是公开的活动定义读接口（阶段9 已落地，混合模块六条）；而 `POST/DELETE /api/activities/:id` 是「**我**对某个活动的报名」，必须整片压在身份守卫后面。混在一个前缀里会让 `/partners/:id` 这种公开读路径和写路径共用守卫，或者反过来让写接口漏守卫——两种都不做。同一个道理见上面 `/achievements` 与 `/badges` 不合并那条。
 - 报名的 `:id` 用**活动 id**而不是报名行主键：语义是「我对这个活动报没报」，业务键是活动；内部那个 25 位 cuid 不让用户拼（与阶段4.3.3 用 `placeId` 而非收藏行 id 同一条口径）。取消是**物理删除**报名行（表里没有取消时间列，保留取消记录已标 BLOCKED），
   所以 `DELETE` 的 200 响应只回 `{ activityId, signedUp: false, remaining }` 加一句「已取消报名「标题」」——**不回任何时间戳**，
   因为此刻库里已经没有任何时间可依据；报名行自己的 `joined_at` 随该行一起删掉，不拿来冒充取消时间。

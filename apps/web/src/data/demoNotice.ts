@@ -7,7 +7,11 @@ export const DEMO_NOTICE_PLACES = '示例数据 · 校园地点示例列表，�
 
 export const DEMO_NOTICE_WEATHER = '示例数据 · 天气API待接入'
 
-export const DEMO_NOTICE_AI = '演示样例 · AI规划引擎将在阶段5 接入'
+export const DEMO_NOTICE_AI = 'AI 能力暂未开放 · 当前规划由前端规则模板匹配，不是模型生成'
+
+/** 规划页统一声明：规则模板匹配（非 AI），地点真实、价格/时长为规则估算 */
+export const DEMO_NOTICE_PLAN_RULE =
+  '规则模板规划 · 由前端规则库按条件匹配，非 AI 生成；地点为核实存在的江苏大学与镇江地点，价格与时长是规则估算，不代表实时价格或营业状态'
 
 export const DEMO_NOTICE_LOCAL_STATE = '本地状态 · 保存在这台设备的浏览器里，刷新后保留，未接入服务端'
 

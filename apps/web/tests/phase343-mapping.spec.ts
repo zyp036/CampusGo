@@ -180,9 +180,10 @@ test.describe('阶段3.4.3 映射分支（临时测试数据）', () => {
 
     await expect(page.getByText('接口返回 1 条 DAILY 定义')).toBeVisible()
     await expect(page.getByText('接口返回 1 条 EXPLORE 定义')).toBeVisible()
-    /* 真实模式下任务不可勾选，并有明确说明 */
-    await expect(page.getByTestId('challenge-task-locked').first()).toBeVisible()
-    await expect(page.getByTestId('challenge-task').first()).toHaveAttribute('aria-disabled', 'true')
+    /* 真实模式未登录：任务定义可看，勾选完成属于账号 → 页面给登录入口。
+       批次2 起任务可经接口完成（未登录勾选会得到 401），不再把整列任务锁死。 */
+    await expect(page.getByTestId('challenge-login-prompt')).toBeVisible()
+    await expect(page.getByTestId('challenge-task').first()).toBeVisible()
 
     /* 徽章一律「未判定」，有 target 的显示规则数字，metric=NONE 的显示没有可计算目标 */
     await expect(page.getByTestId('badge-tile')).toHaveCount(2)
@@ -192,7 +193,7 @@ test.describe('阶段3.4.3 映射分支（临时测试数据）', () => {
     await page.getByTestId('badge-tile').first().click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toContainText('解锁状态未判定')
-    await expect(dialog).toContainText('接口未提供')
+    await expect(dialog).toContainText('尚未同步')
 
     /* 弹窗是全屏遮罩，换看下一枚前要先关掉，否则第二下点击会被遮罩吃掉 */
     await page.keyboard.press('Escape')

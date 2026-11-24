@@ -183,3 +183,35 @@ postgresqlExtensions、relationJoins、schemaEngineDriverAdapters、shardKeys、
    删除被引用的任务/徽章 → 1451、删除地点 → 补记置空且原文保留 + 收藏级联删除、
    删除用户 → 五类私有数据全部级联消失、删除主办人 → 活动保留且 `host_user_id` 置空。
    结束用哨兵异常强制回滚，再查 11 张表全为 0 行、表清单与索引未变。
+
+## 十、阶段3.2 之后的结构增量（最终收尾补记，2026-11-24）
+
+> 上文一～九节是阶段3.2 审核通过的设计口径（11 张表），作为历史存档保留。本节补记其后经用户指令新增的结构，**当前库实测 16 张表 = 15 张业务表 + Prisma 自己的 `_prisma_migrations`，外键 16 条**（2026-11-24 由 `information_schema` 直读复核）。所有增量均走正式迁移文件（`apps/server/prisma/migrations/`），`prisma migrate status` 无漂移（5 个迁移全部 applied），未删任何真实数据。
+
+### 10.1 新增表
+
+| 表 | 模型 | 用途 | 关键约束 | 迁移 |
+| --- | --- | --- | --- | --- |
+| `cg_session` | `Session` | 阶段4.6 认证会话：`token`（VarChar64，唯一）+ `user_id` + `expires_at` | `user_id` 外键 → `cg_user` **Cascade**（删用户连带删会话）；`@@index([userId])` | `20261123120000_backfill_place_columns_and_session` |
+| `cg_user_plan` | `UserPlan` | 阶段9 我的规划保存：`title`(VarChar80) + `conditions`(Json) + `result`(Json) 快照 | `user_id` 外键 → `cg_user` **Cascade**；`@@index([userId, createdAt])`；归属走 4.3.1 身份边界，`userId` 不接受客户端传值 | `20261123130000_add_user_plan_and_activity_cancelled` |
+| `cg_memory_photo` | `MemoryPhoto` | 「传图片功能」：一条时光记录下的图片**元信息**（`stored_name` / `mime_type` / `byte_size` / `sort_order`）。图片字节在服务器磁盘 `apps/server/storage/memory-photos/<用户id>/<照片id>.<扩展名>`，库里不存 base64 | `id` `@db.Char(25)` 主键（服务端生成，非客户端可传）；`memory_id` 外键 → `cg_memory` **Cascade**（删记录连带删图片行）；`@@index([memoryId, sortOrder])`；`cg_memory.photo_count` 由写入侧在同一事务里重算，不是真相来源 | `20261124120000_add_memory_photo_and_feedback` |
+| `cg_feedback` | `Feedback` | 个人中心「意见反馈」落库：`category` + `content` + 可空 `contact` | `user_id` 外键 → `cg_user` **Cascade**；`@@index([userId, createdAt])`；同样走身份边界，归属只取会话用户 | `20261124120000_add_memory_photo_and_feedback` |
+
+### 10.2 枚举增量
+
+- `ActivityStatus` 新增 **`CANCELLED`**（原仅 `OPEN`/`CLOSED`）。语义：`OPEN` 还在收人 / `CLOSED` 已结束 / `CANCELLED` 主办人取消。取消与结束分开，取消后保留活动行供已报名用户查看；报名拒绝 `CANCELLED`/`CLOSED`/满员。
+
+### 10.3 地点坐标列（阶段6 遗留，保留为数据属性）
+
+- `cg_campus_place.latitude` / `longitude`（`Decimal(10,7)`，可空）保留。**独立地图探索页已取消**（见 [Explore 取消报告](explore-removal-report.md)），坐标列不再用于地图导航，作为地点数据属性保留；注释中过时的「地图搜索和路线规划」用途描述已改为「独立地图页已取消，作为地点数据保留」，**列与数据一律不动**。
+
+### 10.4 迁移历史缺口补齐
+
+- 阶段6 四列与 `cg_session` 原用 `prisma db push` 落库、未生成 migration 目录。最终收尾 A1 用 `migrate diff` → `db execute` → `migrate resolve` 补成正式迁移文件，使 `migrate deploy` 可在生产复现完整结构。
+- 实测库 collation 为 `utf8mb4_0900_ai_ci`，Prisma DDL 默认 `unicode_ci`，迁移内先 `CONVERT TO` 再加外键。
+
+### 10.5 当前数据现状（收尾清理后实测）
+
+- 16 张表（15 张业务表 + `_prisma_migrations`）；`cg_campus_place` **12 行 VERIFIED**（核实存在的江苏大学与镇江地点）；`cg_challenge` **7 行** + `cg_badge` **9 行**（系统模板种子，明确标注，`seed:templates` 幂等 upsert，只写定义表）；`cg_user` **2 行真实用户**（「哈基咪」CG-2026-0256 / CG-2026-0621，保留）；其余用户记录表（偏好/收藏/任务记录/徽章记录/记忆/报名/规划/会话/图片/反馈）清理后回基线。
+- 本轮新增两张表落地后实测行数：`cg_memory_photo` **0 行**、`cg_feedback` **0 行**（迁移只建结构，不写业务数据）。图片字节不在库里，磁盘目录 `apps/server/storage/memory-photos/` 已在 `.gitignore` 排除。
+- 测试账号清理走单事务 + 显式保留守卫（保留名单恰 2、无未匹配账号才执行），FK 安全序删除，**真实用户与系统种子一行未动**，未清空数据库、未 `migrate reset`。

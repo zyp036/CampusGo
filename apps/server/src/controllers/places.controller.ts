@@ -34,7 +34,7 @@ export interface PlaceDto {
   /** JSON 列，库里理论可放任何 JSON，这里只把字符串数组原样给出，其余按空数组处理 */
   tags: string[]
   source: 'DEMO' | 'VERIFIED'
-  /** 阶段6 新增：经纬度坐标（GCJ-02 坐标系），可空 */
+  /** 经纬度坐标（GCJ-02 坐标系），可空。独立地图页已取消，作为地点数据保留 */
   latitude: number | null
   longitude: number | null
   /** 阶段6 新增：详细地址，可空 */

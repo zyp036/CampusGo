@@ -1,13 +1,21 @@
 <script setup lang="ts">
-import { CalendarClock, ChevronDown, MapPin, Users } from '@lucide/vue'
+import { computed } from 'vue'
+import { CalendarClock, ChevronDown, MapPin, MessageCircle, Pencil, Trash2, Users, XCircle } from '@lucide/vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import type { PartnerActivity } from '@/types/models'
 
-const props = defineProps<{ activity: PartnerActivity; joined: boolean }>()
+const props = withDefaults(
+  defineProps<{ activity: PartnerActivity; joined: boolean; real?: boolean; busy?: boolean }>(),
+  { real: false, busy: false }
+)
 const emit = defineEmits<{
   toggleJoin: [activityId: string]
   openDetail: [activityId: string]
+  openChat: [activityId: string]
+  edit: [activityId: string]
+  cancel: [activityId: string]
+  delete: [activityId: string]
 }>()
 
 const STATUS_META = {
@@ -16,9 +24,23 @@ const STATUS_META = {
   full: { label: '已满员', tone: 'neutral' as const }
 }
 
-function seatText(joined: number, capacity: number): string {
-  return props.joined ? `${joined + 1}/${capacity} · 已含你` : `${joined}/${capacity}`
-}
+/** 真实模式：已结束/已取消优先于名额状态表达；演示模式只有三态名额 */
+const closed = computed(() => props.real && props.activity.activityStatus === 'CLOSED')
+const cancelled = computed(() => props.real && props.activity.activityStatus === 'CANCELLED')
+const inactive = computed(() => closed.value || cancelled.value)
+const statusBadge = computed(() => {
+  if (closed.value) return { label: '已结束', tone: 'neutral' as const }
+  if (cancelled.value) return { label: '已取消', tone: 'neutral' as const }
+  return STATUS_META[props.activity.status]
+})
+
+/** 真实 joined 已含本人，直接显示；演示 joined 不含本人，报名后 +1 */
+const displayJoined = computed(() =>
+  props.real ? props.activity.joined : props.joined ? props.activity.joined + 1 : props.activity.joined
+)
+const seatText = computed(() => `${displayJoined.value}/${props.activity.capacity}`)
+const canJoin = computed(() => !inactive.value && props.activity.status !== 'full')
+const isHost = computed(() => props.real && Boolean(props.activity.isHost))
 </script>
 
 <template>
@@ -42,12 +64,15 @@ function seatText(joined: number, capacity: number): string {
               {{ activity.title }}
             </button>
           </h3>
-          <StatusBadge :tone="STATUS_META[activity.status].tone" size="sm" class="shrink-0">
-            {{ STATUS_META[activity.status].label }}
+          <StatusBadge :tone="statusBadge.tone" size="sm" class="shrink-0">
+            {{ statusBadge.label }}
           </StatusBadge>
         </div>
         <p class="mt-1 truncate text-caption text-ink-400">
-          {{ activity.host }} 发起 · {{ activity.category }} · 昵称与身份均为示例
+          <template v-if="real">
+            {{ activity.host }} 发起 · {{ activity.category }}<template v-if="activity.hostTag"> · {{ activity.hostTag }}</template>
+          </template>
+          <template v-else>{{ activity.host }} 发起 · {{ activity.category }}</template>
         </p>
       </div>
     </div>
@@ -77,30 +102,37 @@ function seatText(joined: number, capacity: number): string {
       <div class="flex items-center justify-between text-caption text-ink-400">
         <span class="flex items-center gap-1.5">
           <Users :size="13" class="text-ink-300" aria-hidden="true" />
-          已报名（示例人数）
+          {{ '已报名' }}
         </span>
-        <span class="tabular-nums">{{ seatText(activity.joined, activity.capacity) }}</span>
+        <span class="tabular-nums">{{ seatText }}</span>
       </div>
       <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-pill bg-surface-sunken">
         <div
           class="h-full rounded-pill bg-brand-gradient transition-[width] duration-300 ease-smooth"
-          :style="{ width: `${Math.min(100, ((joined ? activity.joined + 1 : activity.joined) / activity.capacity) * 100)}%` }"
+          :style="{ width: `${Math.min(100, (displayJoined / activity.capacity) * 100)}%` }"
         />
       </div>
     </div>
 
-    <div class="mt-4 flex items-center gap-2 border-t border-line/70 pt-3.5">
+    <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line/70 pt-3.5">
       <BaseButton
-        v-if="activity.status !== 'full'"
+        v-if="canJoin && !isHost"
         :variant="joined ? 'outline' : 'primary'"
         size="sm"
+        :disabled="busy"
         data-testid="partner-join"
         @click="emit('toggleJoin', activity.id)"
       >
         {{ joined ? '取消报名' : '报名参加' }}
       </BaseButton>
-      <span v-if="activity.status === 'full'" class="text-caption text-ink-400">
-        这一场名额已满，可以在阶段9 开启候补
+      <span v-else-if="isHost && !inactive" class="text-caption text-ink-400">
+        你是主办人
+      </span>
+      <span v-else-if="inactive" class="text-caption text-ink-400">
+        {{ cancelled ? '这场活动已被主办人取消' : '这场活动已结束' }}
+      </span>
+      <span v-else class="text-caption text-ink-400">
+        {{ '这一场名额已满' }}
       </span>
       <BaseButton
         variant="ghost"
@@ -111,9 +143,56 @@ function seatText(joined: number, capacity: number): string {
       >
         看详情
       </BaseButton>
-      <span v-if="activity.status !== 'full'" class="ml-auto text-[11px] text-ink-300">
-        演示交互 · 未接入服务端
-      </span>
+      <BaseButton
+        v-if="joined || isHost"
+        variant="soft"
+        size="sm"
+        :icon="MessageCircle"
+        data-testid="partner-chat"
+        @click="emit('openChat', activity.id)"
+      >
+        聊天
+      </BaseButton>
+      <template v-if="isHost && activity.activityStatus === 'OPEN'">
+        <BaseButton
+          variant="soft"
+          size="sm"
+          :icon="Pencil"
+          data-testid="partner-host-edit"
+          @click="emit('edit', activity.id)"
+        >
+          编辑
+        </BaseButton>
+        <BaseButton
+          variant="ghost"
+          size="sm"
+          :icon="XCircle"
+          data-testid="partner-host-cancel"
+          @click="emit('cancel', activity.id)"
+        >
+          取消活动
+        </BaseButton>
+      </template>
+      <template v-if="isHost && cancelled">
+        <BaseButton
+          variant="soft"
+          size="sm"
+          :icon="Pencil"
+          data-testid="partner-host-edit-cancelled"
+          @click="emit('edit', activity.id)"
+        >
+          修改
+        </BaseButton>
+        <BaseButton
+          variant="danger"
+          size="sm"
+          :icon="Trash2"
+          data-testid="partner-host-delete"
+          @click="emit('delete', activity.id)"
+        >
+          删除
+        </BaseButton>
+      </template>
     </div>
   </article>
 </template>

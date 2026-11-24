@@ -20,13 +20,16 @@ const BUSINESS_TABLES = [
   'cg_badge',
   'cg_campus_place',
   'cg_challenge',
+  'cg_feedback',
   'cg_memory',
+  'cg_memory_photo',
   'cg_partner_activity',
   'cg_session',
   'cg_user',
   'cg_user_badge',
   'cg_user_challenge',
   'cg_user_favorite_place',
+  'cg_user_plan',
   'cg_user_preference'
 ]
 
@@ -46,7 +49,10 @@ const EXPECTED_FOREIGN_KEYS = [
   { table: 'cg_activity_participant', column: 'user_id', ref: 'cg_user', onDelete: 'CASCADE' },
   { table: 'cg_user_favorite_place', column: 'user_id', ref: 'cg_user', onDelete: 'CASCADE' },
   { table: 'cg_user_favorite_place', column: 'place_id', ref: 'cg_campus_place', onDelete: 'CASCADE' },
-  { table: 'cg_session', column: 'user_id', ref: 'cg_user', onDelete: 'CASCADE' }
+  { table: 'cg_session', column: 'user_id', ref: 'cg_user', onDelete: 'CASCADE' },
+  { table: 'cg_user_plan', column: 'user_id', ref: 'cg_user', onDelete: 'CASCADE' },
+  { table: 'cg_memory_photo', column: 'memory_id', ref: 'cg_memory', onDelete: 'CASCADE' },
+  { table: 'cg_feedback', column: 'user_id', ref: 'cg_user', onDelete: 'CASCADE' }
 ]
 
 /**
@@ -54,16 +60,20 @@ const EXPECTED_FOREIGN_KEYS = [
  * 收藏表多出的那一条普通索引是 MySQL 为 place_id 外键自动补建的（cg_user_favorite_place_place_id_fkey）：
  * place_id 不是任何声明式索引的首位列，外键又必须有索引支撑，所以由服务端隐式创建。
  * 其余外键列都已被 @@unique / @@index 覆盖，因此不会再出现隐式索引。
+ * 地点表三条普通索引来自 4.5 换成真实江苏大学地点后的 schema（category / name / campus）。
  */
 const EXPECTED_INDEX_COUNTS: Record<string, { unique: number; plain: number }> = {
   cg_user: { unique: 1, plain: 0 },
   cg_user_preference: { unique: 1, plain: 1 },
-  cg_campus_place: { unique: 0, plain: 2 },
+  cg_campus_place: { unique: 0, plain: 3 },
   cg_challenge: { unique: 0, plain: 1 },
   cg_user_challenge: { unique: 1, plain: 2 },
   cg_badge: { unique: 0, plain: 1 },
   cg_user_badge: { unique: 1, plain: 1 },
   cg_memory: { unique: 0, plain: 2 },
+  cg_memory_photo: { unique: 1, plain: 1 },
+  cg_feedback: { unique: 0, plain: 1 },
+  cg_user_plan: { unique: 0, plain: 1 },
   cg_partner_activity: { unique: 0, plain: 3 },
   cg_activity_participant: { unique: 1, plain: 1 },
   cg_user_favorite_place: { unique: 1, plain: 2 },
@@ -85,7 +95,8 @@ const EXPECTED_VARCHAR_COLUMNS = [
   'cg_campus_place.category',
   'cg_campus_place.name',
   'cg_memory.activity_type',
-  'cg_partner_activity.category'
+  'cg_partner_activity.category',
+  'cg_feedback.category'
 ]
 
 const EXPECTED_COLLATION = 'utf8mb4_0900_ai_ci'
@@ -230,6 +241,21 @@ async function collectSnapshot(client: Tx): Promise<Snapshot> {
 
 function businessTables(snapshot: Snapshot): string[] {
   return snapshot.tables.filter((name) => name !== MIGRATION_TABLE)
+}
+
+/** 逐表行数快照：给「冒烟前 vs 回滚后」那条核对用，表不在库里就记 -1，不与 0 混淆 */
+async function countRows(client: PrismaClient, tables: readonly string[]): Promise<Record<string, number>> {
+  const out: Record<string, number> = {}
+  for (const table of tables) {
+    try {
+      const rows = await client.$queryRawUnsafe<Row[]>(`SELECT COUNT(*) AS c FROM \`${table}\``)
+      out[table] = num(rows[0]?.c)
+    } catch {
+      // 表不在库里（结构比对那条会单独报），这里记 -1，不让一次取数把整个脚本打断
+      out[table] = -1
+    }
+  }
+  return out
 }
 
 function checkStructure(snapshot: Snapshot, problems: string[]): void {
@@ -683,17 +709,20 @@ async function main(): Promise<void> {
     console.log('  约束行为冒烟（同一事务内执行，结束强制回滚）')
     const startedAt = Date.now()
     const before = snapshot
+    // 库里现在有真实数据（4.5 的江苏大学地点、历轮认证测试留下的账号），
+    // 所以「回滚干净」不能再拿「全表 0 行」当尺子——那会把别人的数据当成残留。
+    // 改成逐表比「冒烟前 vs 回滚后」：本脚本只允许在事务里写、写完整体回滚，行数一字不变。
+    const rowsBefore = await countRows(client, BUSINESS_TABLES)
     const results = await runSmokeTests(client, problems)
     results.forEach((item) => console.log(`    ${item.ok ? '通过' : '失败'}  ${item.label} — ${item.detail}`))
     console.log(`    耗时 ${Date.now() - startedAt} ms`)
 
     const after = await collectSnapshot(client)
+    const rowsAfter = await countRows(client, BUSINESS_TABLES)
     const leftovers: string[] = []
     for (const table of BUSINESS_TABLES) {
       if (!after.tables.includes(table)) continue
-      const rows = await client.$queryRawUnsafe<Row[]>(`SELECT COUNT(*) AS c FROM \`${table}\``)
-      const count = num(rows[0]?.c)
-      if (count > 0) leftovers.push(`${table}=${count} 行`)
+      if (rowsAfter[table] !== rowsBefore[table]) leftovers.push(`${table} ${rowsBefore[table]} → ${rowsAfter[table]} 行`)
     }
     const rolledBack =
       leftovers.length === 0 &&
@@ -702,11 +731,11 @@ async function main(): Promise<void> {
       before.indexNames.length === after.indexNames.length
     if (!rolledBack) {
       problems.push(
-        `回滚后仍有残留：${leftovers.join(', ') || '表清单/外键/索引数量发生变化'}`
+        `回滚后行数发生变化：${leftovers.join(', ') || '表清单/外键/索引数量发生变化'}`
       )
     }
     console.log(
-      `    回滚核对  ${rolledBack ? `${BUSINESS_TABLES.length} 张业务表全部 0 行，表清单与索引未变` : '发现残留，见上面差异'}`
+      `    回滚核对  ${rolledBack ? `${BUSINESS_TABLES.length} 张业务表逐表行数与冒烟前一字不变，表清单与索引未变` : '发现差异，见上面说明'}`
     )
   } finally {
     await client.$disconnect().catch(() => undefined)

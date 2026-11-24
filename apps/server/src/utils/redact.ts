@@ -33,6 +33,12 @@ export function redactSensitive(raw: string): string {
     }
   }
 
+  // AI API Key 整串替换：防止百炼调用失败时异常信息带出 Authorization 头
+  const aiKey = config.aiApiKey
+  if (aiKey && aiKey.length >= 4) {
+    text = text.split(aiKey).join('***AI_API_KEY***')
+  }
+
   text = text.replace(SECRET_KEY_PATTERN, (_match, key: string) => `${key}***`)
   text = maskUrlPassword(text)
 

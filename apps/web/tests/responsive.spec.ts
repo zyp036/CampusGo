@@ -161,9 +161,9 @@ test.describe('阶段2.1 响应式与功能验收', () => {
 
     const hero = page.getByRole('heading', {
       level: 2,
-      name: '傍晚的北固山步道，看一次长江落日'
+      name: 'AI 个性化推荐'
     })
-    await expect(hero, '首页 AI 推荐区应在首屏可见').toBeVisible()
+    await expect(hero, '首页推荐位应在首屏可见').toBeVisible()
     await expect(hero).toBeInViewport()
 
     await page.screenshot({ path: shotPath('home-viewport') })

@@ -39,9 +39,9 @@ import {
  * 4. **单选组的「同组只有一真」由服务层保证**（`prisma/schema.prisma:96` 交给阶段4 的那件事），
  *    规则本身不在这里发明，取自 `preference-definitions.ts`，其出处是前端已上线的 `selection` 定义。
  *
- * 与 4.2 的 `user-profile.ts` 一样，**本轮不开放可用的 HTTP 接口**：
- * 正式认证（4.6）完成前，`/api/preferences` 下的每条请求都会在守卫处得到 501，
- * 这些函数只能被守卫之后的控制器、以及注入假存储的探针调用。
+ * HTTP 接口随认证（4.6）落地而开放：`/api/preferences` 下每条请求先过会话守卫，
+ * 未认证一律 401 `identity-missing`，
+ * 这些函数只被守卫之后的控制器、以及注入假存储的探针调用。
  */
 
 /** 只取三个业务列：`id` / `user_id` / `created_at` / `updated_at` 一律不往外带 */

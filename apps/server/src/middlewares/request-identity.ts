@@ -35,6 +35,7 @@ const WRITE_METHODS: ReadonlySet<string> = new Set(['post', 'put', 'patch', 'del
  */
 export const PUBLIC_WRITE_ROUTE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
   '/api/auth/register',
+  '/api/auth/demo-account',
   '/api/auth/login',
   '/api/auth/logout'
 ])

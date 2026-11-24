@@ -9,18 +9,16 @@ import { expect, test } from '@playwright/test'
  * 响应头里带着后端安全与限流中间件加的标记（伪造的 route 响应没有这些），
  * 再用一次独立的 Node 侧请求对照同一接口的数字是否一致。
  *
- * 数据库现状（2026-11-23 产品调整后）：`campusgo` 里 cg_campus_place 有 12 行核实过的
- * 江苏大学与镇江地点，cg_challenge / cg_badge 仍为 0 行。所以地点模块的断言一律先取
- * 后端真实 total 再按行数分支：空库时如实空态，有数据时卡片数与接口一致；
- * 挑战与徽章模块仍按空库口径断言。不期待任何写死的行数。
+ * 数据库现状（2026-11-24 收尾）：`campusgo` 里 cg_campus_place 有 12 行核实过的江苏大学与镇江地点，
+ * cg_challenge 有 7 行系统任务模板（3 DAILY + 4 EXPLORE）、cg_badge 有 9 行系统徽章模板。
+ * 所以三个模块都按「库内真实行数」分支断言：先取后端真实 total / items 再核对页面，
+ * 空库时如实空态、有数据时卡片数与接口一致，不期待任何写死的行数。
  *
- * 详情成功渲染那条现在库里有真实行可以直接验证；仍保留 CAMPUSGO_E2E_PLACE_ID 等变量
- * 以便在独立测试库上复跑，未提供时按库内实际数据决定验证或跳过，跳过原因写在用例里。
+ * 详情成功渲染那条直接用库内系统模板验证；仍保留 CAMPUSGO_E2E_PLACE_ID 变量
+ * 以便在独立测试库上复跑，未提供时按库内实际数据决定验证目标。
  */
 
 const seededPlaceId = process.env.CAMPUSGO_E2E_PLACE_ID ?? ''
-const seededChallengeId = process.env.CAMPUSGO_E2E_CHALLENGE_ID ?? ''
-const seededBadgeId = process.env.CAMPUSGO_E2E_BADGE_ID ?? ''
 
 const PAGINATION_KEYS = ['page', 'pageSize', 'total', 'totalPages', 'hasPrev', 'hasNext', 'returned']
 
@@ -107,7 +105,7 @@ test.describe('阶段3.4.3 真实接口模式', () => {
     expect(requestsAfter, '「只看收藏」不应该产生后端请求').toBe(0)
   })
 
-  test('空库模块如实空态，有数据的模块正常渲染，都不是示例内容也不是请求失败', async ({ page }) => {
+  test('各模块按库内真实行数渲染：空库如实空态、有数据正常渲染，非示例非失败', async ({ page }) => {
     /* 地点模块按后端真实行数分支：0 行才是空态口径，有行就核对卡片数 */
     const direct = await page.request.get('/api/places?page=1&pageSize=50')
     const placesTotal = (await direct.json()).data.pagination.total as number
@@ -123,15 +121,29 @@ test.describe('阶段3.4.3 真实接口模式', () => {
     }
     await expect(page.getByTestId('content-failed')).toHaveCount(0)
 
+    /* 挑战与徽章同样按库内真实行数分支（现有 7 任务 / 9 徽章系统模板） */
+    const challengeItems = (await (await page.request.get('/api/challenges')).json()).data.items as { kind: string }[]
+    const badgeTotal = ((await (await page.request.get('/api/badges')).json()).data.items as unknown[]).length
+    const dailyTotal = challengeItems.filter((i) => i.kind === 'DAILY').length
+    const exploreTotal = challengeItems.filter((i) => i.kind === 'EXPLORE').length
+
     await page.goto('/challenge')
-    await expect(page.getByTestId('challenge-daily-empty')).toBeVisible()
-    await expect(page.getByTestId('challenge-explore-empty')).toBeVisible()
-    await expect(page.getByTestId('challenge-badge-empty')).toBeVisible()
+    if (dailyTotal === 0) {
+      await expect(page.getByTestId('challenge-daily-empty')).toBeVisible()
+    } else {
+      await expect(page.getByTestId('challenge-task')).toHaveCount(dailyTotal + exploreTotal)
+    }
+    if (exploreTotal === 0) await expect(page.getByTestId('challenge-explore-empty')).toBeVisible()
+    if (badgeTotal === 0) {
+      await expect(page.getByTestId('challenge-badge-empty')).toBeVisible()
+    } else {
+      await expect(page.getByTestId('badge-tile')).toHaveCount(badgeTotal)
+    }
     await expect(page.getByTestId('content-failed')).toHaveCount(0)
 
-    /* 没有可判定依据的两个计数改用文字，不用 0/0、0/9 冒充服务器结论 */
+    /* 未登录：徽章解锁与任务完成计数没有可判定依据，改用文字，不用 0 冒充服务器结论 */
     await expect(page.getByTestId('challenge-earned')).toHaveText('未判定')
-    await expect(page.getByTestId('challenge-completion')).toContainText('完成状态未接入')
+    await expect(page.getByTestId('challenge-completion')).toContainText('完成记录未取到')
     await expect(page.getByTestId('challenge-local-growth-note')).toBeVisible()
   })
 
@@ -149,7 +161,7 @@ test.describe('阶段3.4.3 真实接口模式', () => {
     await page.waitForTimeout(600)
 
     await page.goto('/challenge')
-    await page.getByTestId('challenge-reset').click()
+    /* 真实模式没有「重置演示进度」按钮（那是示例模式专属）；这里只读定义，不做任何写入 */
     await page.waitForTimeout(600)
 
     const writes = [...methods].filter((item) => !item.startsWith('GET '))
@@ -225,28 +237,46 @@ test.describe('阶段3.4.3 真实接口模式', () => {
     await expect(page.getByRole('dialog')).toContainText(detailBody.data.name as string)
   })
 
-  test('挑战与徽章详情接口真实可达：未知 ID 一律 404，不返回示例定义', async ({ page }) => {
-    const challenge = await page.request.get('/api/challenges/d-1')
-    expect(challenge.status()).toBe(404)
-    const badge = await page.request.get('/api/badges/b-1')
-    expect(badge.status()).toBe(404)
+  test('挑战与徽章详情接口真实可达：未知 ID 一律 404，已知 ID 真渲染', async ({ page }) => {
+    const unknownChallenge = await page.request.get('/api/challenges/d-999999')
+    expect(unknownChallenge.status()).toBe(404)
+    expect((await unknownChallenge.json()).error).toBe('NOT_FOUND')
+    const unknownBadge = await page.request.get('/api/badges/b-999999')
+    expect(unknownBadge.status()).toBe(404)
+    expect((await unknownBadge.json()).error).toBe('NOT_FOUND')
 
-    if (!seededChallengeId || !seededBadgeId) {
-      test.skip(true, '未提供 CAMPUSGO_E2E_CHALLENGE_ID / CAMPUSGO_E2E_BADGE_ID：需要临时行才能验证成功渲染')
-    }
+    /* 库里已有系统模板（7 挑战 / 9 徽章），直接验证详情成功渲染，不再依赖外部 env、不再跳过 */
+    const challengeList = await page.request.get('/api/challenges')
+    const badgeList = await page.request.get('/api/badges')
+    const challengeIds = ((await challengeList.json()).data.items as { id: string }[]).map((i) => i.id)
+    const badgeIds = ((await badgeList.json()).data.items as { id: string }[]).map((i) => i.id)
+    expect(challengeIds.length, '系统挑战模板应在库里').toBeGreaterThan(0)
+    expect(badgeIds.length, '系统徽章模板应在库里').toBeGreaterThan(0)
 
     await page.goto('/challenge')
     const challengeDetail = page
-      .waitForRequest((req) => new URL(req.url()).pathname === `/api/challenges/${seededChallengeId}`)
+      .waitForRequest((req) => /^\/api\/challenges\/.+/.test(new URL(req.url()).pathname))
       .catch(() => null)
     await page.getByTestId('challenge-task-detail').first().click()
-    expect(await challengeDetail).not.toBeNull()
+    const cReq = await challengeDetail
+    expect(cReq, '点任务详情没有发出真实详情请求').not.toBeNull()
+    const cId = decodeURIComponent(new URL(cReq!.url()).pathname.split('/').pop() ?? '')
+    expect(challengeIds, '详情请求的 id 必须是库里真实存在的挑战').toContain(cId)
+    expect((await cReq!.response())!.status(), '已知挑战详情应 200').toBe(200)
+
+    /* 挑战详情是全屏遮罩弹窗，先关掉再点徽章，否则下一下点击会被遮罩吃掉 */
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
     const badgeDetail = page
-      .waitForRequest((req) => new URL(req.url()).pathname === `/api/badges/${seededBadgeId}`)
+      .waitForRequest((req) => /^\/api\/badges\/.+/.test(new URL(req.url()).pathname))
       .catch(() => null)
     await page.getByTestId('badge-tile').first().click()
-    expect(await badgeDetail).not.toBeNull()
+    const bReq = await badgeDetail
+    expect(bReq, '点徽章没有发出真实详情请求').not.toBeNull()
+    const bId = decodeURIComponent(new URL(bReq!.url()).pathname.split('/').pop() ?? '')
+    expect(badgeIds, '详情请求的 id 必须是库里真实存在的徽章').toContain(bId)
+    expect((await bReq!.response())!.status(), '已知徽章详情应 200').toBe(200)
   })
 
   test('挑战与徽章列表接口真实请求，字段按后端契约收敛', async ({ page }) => {
@@ -315,5 +345,30 @@ test.describe('阶段3.4.3 真实接口模式', () => {
 
     const retry = page.getByTestId('content-retry')
     await expect(retry).toBeVisible()
+  })
+
+  test('B8 真实模式用户数据不落 localStorage：演示草稿只在示例模式写，切回真实即停写', async ({ page }) => {
+    const STATE_KEY = 'campusgo.local-user-state.v1'
+    const readKey = () => page.evaluate((k) => window.localStorage.getItem(k), STATE_KEY)
+
+    /* 默认真实模式：先清掉任何历史演示草稿，首屏与未登录交互都不该写本地用户状态 */
+    await page.goto('/challenge')
+    await page.evaluate((k) => window.localStorage.removeItem(k), STATE_KEY)
+    await page.reload()
+    expect(await readKey(), '真实模式首屏不该写本地用户状态').toBeNull()
+
+    await page.getByTestId('challenge-task').first().click()
+    expect(await readKey(), '真实模式未登录点任务走登录闸，不该写本地用户状态').toBeNull()
+
+    /* 切到示例模式：只有这时演示草稿才落盘 */
+    await page.getByTestId('data-source-demo').click()
+    await page.getByTestId('challenge-task').first().click()
+    await expect.poll(readKey, { message: '示例模式改动后应落盘演示草稿' }).not.toBeNull()
+    const demoSnapshot = await readKey()
+
+    /* 切回真实模式：本机数据清空，真实交互不再写本地（键保持演示快照不被真实模式改写） */
+    await page.getByTestId('data-source-real').click()
+    await page.getByTestId('challenge-task').first().click()
+    expect(await readKey(), '切回真实模式后不应再写本地用户状态').toBe(demoSnapshot)
   })
 })

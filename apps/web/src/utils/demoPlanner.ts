@@ -2,9 +2,9 @@ import { planOptionGroups, planTemplates } from '@/data/plan'
 import type { DemoPlan, PlanNextStep, PlanStep, PlanTemplate } from '@/types/models'
 
 /**
- * 演示规划引擎：纯前端的规则匹配，没有任何模型调用。
- * 阶段5 接入 AI 之后，这个文件整体被接口返回替换，
- * 页面只需要把 buildDemoPlan() 换成一次请求。
+ * 规则模板规划引擎：纯前端的规则匹配，没有任何模型调用。
+ * AI 能力暂缓接入；当前页面把这份规则匹配如实标注为「规则模板规划」，不冒充 AI。
+ * 地点取自核实存在的江苏大学与镇江地点，价格与时长是规则估算，不代表实时数据。
  */
 
 /** 空闲时间档位 → 可以占用的分钟数 */
@@ -119,8 +119,8 @@ export function buildDemoPlan(
     return {
       status: 'failed',
       failure: {
-        reason: '兴趣爱好和活动类型都没选，演示规则库里没有方向。',
-        hint: '可以去掉一项兴趣，或者换一种活动类型再试；这两组选项决定从 data/plan.ts 的 12 条示例安排里挑哪几条。'
+        reason: '兴趣爱好和活动类型都没选，规则模板库里没有方向。',
+        hint: '可以去掉一项兴趣，或者换一种活动类型再试；这两组选项决定从 data/plan.ts 的 12 条规则模板里挑哪几条。'
       }
     }
   }
@@ -143,7 +143,7 @@ export function buildDemoPlan(
     return {
       status: 'failed',
       failure: {
-        reason: '这些兴趣与类型的组合，演示规则库里还没有对应安排。',
+        reason: '这些兴趣与类型的组合，规则模板库里还没有对应安排。',
         hint: '去掉一项限制，或者换成更常见的组合再试。'
       }
     }
@@ -248,7 +248,7 @@ export function buildDemoPlan(
 
   /** 「为什么推荐这条」：把三步筛选按实际计算过程写出来，不写成模型给的结论 */
   const why = [
-    `第一步 方向匹配：${planTemplates.length} 条示例安排里，命中你兴趣或类型的有 ${scored.length} 条，其余直接不参与。`,
+    `第一步 方向匹配：${planTemplates.length} 条规则模板里，命中你兴趣或类型的有 ${scored.length} 条，其余直接不参与。`,
     `第二步 硬筛：时间要装得下（这条 ${needed} 分钟 ≤ 你留出的 ${available} 分钟）、人均要在预算内（¥${template.cost} ≤ ${budgetText}），过筛剩 ${fits.length} 条。`,
     `第三步 打分：类型命中 ${hitTypes.length} ×2 ＋ 兴趣命中 ${hitInterests.length} ×2 ＋ 心情命中 ${moodHit ? '1 ×3' : '0'} ＝ ${score} 分；${
       tiedCount > 1
@@ -256,7 +256,7 @@ export function buildDemoPlan(
         : '这是候选里的最高分'
     }。`,
     `取第 ${pick + 1} 条：候选按分数排好序，「换一条」只是把取的位置往后挪一位，不重新打分，也没有任何模型参与。`,
-    '排序不看热度、评价、真实开放时间与天气，这些在阶段5/6 接入之前不会假装算过。'
+    '排序不看热度、评价、真实开放时间与天气；AI 与实时数据暂缓接入，不会假装算过。价格与时长是规则估算，非实时数据。'
   ]
 
   /** 「推荐下一步」：兴趣相关的动作 + 站内现在就能点的跳转 + 明确待接入的部分 */
@@ -284,7 +284,7 @@ export function buildDemoPlan(
   }
   nextSteps.push({
     label: '回来后',
-    detail: '在「生活记忆」补一条记录，这段就进了当月时间线（本地状态，刷新后还在）。',
+    detail: '在「生活记忆」补一条记录，这段就进了当月时间线（登录后保存在服务端，刷新后还在）。',
     to: { name: 'memories' }
   })
   nextSteps.push({
@@ -295,15 +295,10 @@ export function buildDemoPlan(
   if (company === 'c-solo') {
     nextSteps.push({
       label: '想找人的话',
-      detail: '去「兴趣搭子」看这一类安排现在有没有局，报名按钮改的是本地状态。',
+      detail: '去「兴趣搭子」看这一类安排现在有没有局，报名真实写入服务端、名额由服务端计数。',
       to: { name: 'partners' }
     })
   }
-  nextSteps.push({
-    label: '还没接入',
-    detail: '按真实天气改出发时间、导航到地点、到达后自动打卡。',
-    pending: '阶段5/6'
-  })
 
   const plan: DemoPlan = {
     title: template.title,

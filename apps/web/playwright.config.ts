@@ -37,7 +37,9 @@ const API_ONLY = [
      钉的是 payload 口径与后端 501 答复，同样与视口无关（五视口那份跑它会重复 5 次真请求） */
   /phase442-preference-server\.spec\.ts$/,
   /* 阶段4.6 认证端到端：真浏览器 + 真后端 + 真库，与视口无关 */
-  /phase46-auth\.spec\.ts$/
+  /phase46-auth\.spec\.ts$/,
+  /* 最终收尾 13 步业务流程：真 HTTP + 真库 + 双用户隔离，与视口无关（跑一次即可） */
+  /phase-final-business-flow\.spec\.ts$/
 ]
 
 /** 「后端关闭」那一套只在 playwright.offline.config.ts 里跑（接口前缀指向死端口） */

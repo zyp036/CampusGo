@@ -2,8 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import { useUserStore } from '@/stores/user'
 
 const APP_NAME = '拾光CampusGo'
+
+/** 路由守卫标记：首次导航跳过（等 App.vue 的 checkAuthCapability 完成），后续导航立即判定 */
+let initialNavigationDone = false
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -21,7 +25,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'plan',
         name: 'plan',
         component: () => import('@/views/PlanView.vue'),
-        meta: { title: 'AI生活规划' }
+        meta: { title: '生活规划' }
       },
       {
         // 独立探索页已取消：旧地址与收藏夹跳转到规划页（地点列表在那一页里）
@@ -82,6 +86,25 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior: () => ({ top: 0 })
+})
+
+/**
+ * 登录守卫：
+ * - 首次导航跳过（App.vue 的 checkAuthCapability 还在跑），让页面自己展示登录提示；
+ * - 后续导航：未登录 → /login；已登录访问 /login 或 /register → /home。
+ */
+router.beforeEach((to) => {
+  const isAuthPage = to.name === 'login' || to.name === 'register'
+  const user = useUserStore()
+
+  if (!initialNavigationDone) {
+    initialNavigationDone = true
+    return true
+  }
+
+  if (!user.isAuthenticated && !isAuthPage) return { name: 'login' }
+  if (user.isAuthenticated && isAuthPage) return { name: 'home' }
+  return true
 })
 
 router.afterEach((to) => {

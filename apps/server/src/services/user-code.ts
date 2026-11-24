@@ -10,9 +10,9 @@ import { ApiError } from '../utils/api-error.js'
  * - `user_code`：对外展示码，页面与将来分享链接用它，所以它必须**唯一、可读、无语义**
  *   （不能是自增号，否则「CG-2026-0001」能数出我们有多少用户）。
  *
- * 格式沿用页面已经在显示的那一枚：`CG-<年份>-<4 位序号>`（`CG-2026-0418`），
- * 长度 13，字段是 VARCHAR(24)，留了加位的余量。**每年 1 万个**是当前上限，
- * 真不够用时把序号扩到 5—6 位即可，格式仍是同一族（这也记在验收报告的观察项里）。
+ * 格式沿用页面已经在显示的那一枚：`CG-<年份>-<5 位序号>`（`CG-2026-00418`），
+ * 长度 14，字段是 VARCHAR(24)，留了加位的余量。**每年 10 万个**是当前上限，
+ * 真不够用时把序号扩到 6 位即可，格式仍是同一族（这也记在验收报告的观察项里）。
  *
  * 冲突处理只有一条原则：**换号重试，绝不覆盖**。本模块对外只有 `exists` 一种读，
  * 没有任何 create / update / upsert 能力，测试里连假存储都只实现 `exists`，
@@ -23,10 +23,10 @@ import { ApiError } from '../utils/api-error.js'
 export const USER_CODE_MAX_LENGTH = 24
 
 /** 对外展示码的规范格式 */
-export const USER_CODE_PATTERN = /^CG-\d{4}-\d{4}$/
+export const USER_CODE_PATTERN = /^CG-\d{4}-\d{5}$/
 
-/** 序号空间：0000—9999 */
-export const USER_CODE_SEQUENCE_LIMIT = 10000
+/** 序号空间：00000—99999 */
+export const USER_CODE_SEQUENCE_LIMIT = 100000
 
 /** 连续撞号到此上限就报错，不再无限重试（一年里用户越多，撞号概率越高，必须有明确终点） */
 export const USER_CODE_MAX_ATTEMPTS = 8
@@ -66,7 +66,7 @@ export function buildUserCode(year: number, sequence: number): string {
       rule: 'sequence'
     })
   }
-  const code = `CG-${String(year).padStart(4, '0')}-${String(sequence).padStart(4, '0')}`
+  const code = `CG-${String(year).padStart(4, '0')}-${String(sequence).padStart(5, '0')}`
   if (code.length > USER_CODE_MAX_LENGTH) {
     throw new ApiError(500, 'INTERNAL_ERROR', '用户展示码超出字段长度限制', {
       reason: 'user-code-exceeds-column-width',

@@ -32,8 +32,7 @@ import { parseActivityIdParam, parseActivityListQuery } from '../validation/acti
  * 这个 Router **不允许**用 `apiRouter.use('/activities', …)` 直接挂：
  * 必须走 `routes/index.ts` 里的 `mountUserScopedRouter()`，由它先把 `requireTrustedUserActor`
  * 压在前缀上；漏掉守卫的写接口会让 `createApp()` 的装配期自检直接抛错、服务起不来。
- * 正式认证完成前，上面四条对任何请求都返回 501 `auth-not-implemented`——
- * 路由存在但能力不存在，这是本轮刻意的状态，不是漏配。
+ * 认证（阶段4.6）已落地：守卫只认会话 cookie，未认证请求一律 401 `identity-missing`。
  *
  * 四条路由各挂一个校验器（`validation/activities.ts` 第 3 条）：列表判 query，其余三条只判 params，
  * 都没有包体，所以「一条路由只挂一个 `validate()`」这条天然满足。

@@ -30,7 +30,7 @@ import { cancelSignup, getSignupStatus, listMySignups, signupActivity } from '..
  * 5) 只在开发口径跑：这一支要用 `injected-test` 身份，生产口径下 `--db` 拒绝执行。
  *
  * 清理口径：先删报名行（按本轮记下的活动 id 与用户 id），再删标记活动与标记用户，
- * 最后复核 11 张业务表行数回到开跑前基线、库内基表清单与开跑前逐张相同、
+ * 最后复核 15 张业务表行数回到开跑前基线、库内基表清单与开跑前逐张相同、
  * `cg_activity_participant` 的列清单仍是建表时那 6 列（Schema 未动）。
  */
 
@@ -51,7 +51,13 @@ const ALL_TABLES = [
   'cg_memory',
   ACTIVITY_TABLE,
   PARTICIPANT_TABLE,
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback。
+  // 收尾复核要盖住全部 15 张业务表：少列一张，等于默认它可以被本轮写脏。
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 
 /** `cg_activity_participant` 建表时的 6 列：清理后原样复核，证明本轮没碰 Schema */
@@ -360,7 +366,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
     const deletedActivities = await prisma.partnerActivity.deleteMany({ where: { id: { in: createdActivityIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
 
-    await h.check('DB10', '清理：只删本轮标记行，11 张业务表回到开跑前基线，表清单与报名表列清单都未变（Schema 未动）', async (a) => {
+    await h.check('DB10', '清理：只删本轮标记行，15 张业务表回到开跑前基线，表清单与报名表列清单都未变（Schema 未动）', async (a) => {
       const expectedUsers = createdUserIds.length - blockedUsers.length
       a.ok(deletedUsers.count === expectedUsers, `标记用户删除数 ${deletedUsers.count}/${expectedUsers}（级联用例已删 ${blockedUsers.length} 个）`)
       a.ok((await count(USER_TABLE, `\`user_code\` LIKE '${TEST_CODE_PREFIX}%'`)) === 0, '清理后仍有标记用户')

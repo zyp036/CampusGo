@@ -1689,7 +1689,7 @@ async function runUnitProbe(): Promise<void> {
     observe('G4 口径：这条测的是「顺序不一致就会互等」这件事本身，用的是探针自己的假锁；真实 InnoDB 不会一直等，它当场判死锁、回滚其中一侧，读侧代价是一次重试')
   })
 
-  await check('G5', '装配核对：/api/points 之下两条 GET 都在守卫之后，全站漏守卫写路由仍是 0、写路由总数仍是 19', (a) => {
+  await check('G5', '装配核对：/api/points 之下两条 GET 都在守卫之后，全站漏守卫写路由仍是 0、写路由总数仍是 27', (a) => {
     const app = createApp()
     const report = describeMountedRoutes(app)
     a.ok(report.readable === true, '扫描器读不到路由表，下面几条的结论都无意义')
@@ -1700,12 +1700,12 @@ async function runUnitProbe(): Promise<void> {
       a.ok(route.guards.includes(USER_ACTOR_GUARD_NAME), `${route.method} ${route.path} 的守卫链里没有 ${USER_ACTOR_GUARD_NAME}`)
     }
     a.ok(report.unguardedWriteRoutes.length === 0, `有 ${report.unguardedWriteRoutes.length} 条写接口没过守卫：${JSON.stringify(report.unguardedWriteRoutes)}`)
-    a.ok(report.writeRoutes.length === 19, `全站写路由从 19 条变成了 ${report.writeRoutes.length} 条：本模块不该新增任何写入口`)
+    a.ok(report.writeRoutes.length === 27, `全站写路由从 27 条变成了 ${report.writeRoutes.length} 条：本模块不该新增任何写入口（基线 27 = 偏好 4 + 收藏 2 + 任务 2 + 徽章 1 + 记录 5 + 报名 2 + 认证 5 + 主办 3 + 规划 3）`)
     const boundary = assertUserWriteBoundary(app)
     a.ok(boundary.readable === true && boundary.unguardedWriteRoutes.length === 0, '启动自检的结论和路由扫描不一致')
     const bypass = productionSources().filter((source) => /app\.(post|put|patch|delete)\(\s*['"]\/api\/points/.test(source.code))
     a.ok(bypass.length === 0, `有人绕开 mountUserScopedRouter 直接挂了写路由：${bypass.map((source) => source.name).join('、')}`)
-    observe(`G5 记一笔：写路由基线 19 条 = 偏好/收藏/任务/徽章/记录/报名/认证七个前缀之下的写入口，本模块贡献 0 条（/api/points 两条都是 GET）`)
+    observe(`G5 记一笔：写路由基线 27 条 = 偏好/收藏/任务/徽章/记录/报名/认证/主办/规划九个前缀之下的写入口，本模块贡献 0 条（/api/points 两条都是 GET）`)
   })
 
   /* ---------------------------- R 组：全站对账工具 ---------------------------- */

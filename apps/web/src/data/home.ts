@@ -14,7 +14,6 @@ import {
 import type {
   Activity,
   ActivityCategory,
-  AiRecommendation,
   QuickEntry,
   WeatherSnapshot
 } from '@/types/models'
@@ -30,28 +29,10 @@ export const weather: WeatherSnapshot = {
   advice: '这个温度很适合在户外待上一两个小时'
 }
 
-export const todayRecommendation: AiRecommendation = {
-  title: '傍晚的北固山步道，看一次长江落日',
-  summary:
-    '留出 2 小时和 30 元预算，从校门口坐公交去北固山。先沿步道走到多景楼，再回江边看日落，回来的路上正好能吃晚饭。',
-  reason: '你今天下午有空，偏好户外与摄影，且最近三次计划都在校内——换个城市级的目的地试试。',
-  durationLabel: '约 2 小时',
-  budgetLabel: '预计 ¥25—35',
-  moodLabel: '想放松',
-  tags: ['户外', '摄影', '城市探索', '一个人'],
-  steps: [
-    '17:00 校门口公交站上车，往市区方向',
-    '17:30 到北固山公园，沿主步道上山',
-    '18:00 多景楼平台取景，日落前后光线最好',
-    '18:40 下山至江边栈道，等天色完全暗下来',
-    '19:10 公交返回，顺路在第一食堂吃晚饭'
-  ]
-}
-
 export const quickEntries: QuickEntry[] = [
   {
     routeName: 'plan',
-    title: 'AI生活规划',
+    title: '生活规划',
     description: '输入时间与心情，拿到一份能直接执行的计划',
     icon: Sparkles,
     gradient: 'bg-gradient-to-br from-brand-500 to-brand-600'

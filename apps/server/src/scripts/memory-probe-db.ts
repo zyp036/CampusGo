@@ -36,7 +36,7 @@ import {
  * 5) 只在开发口径跑：这一支要用 `injected-test` 身份，生产口径下 `--db` 拒绝执行。
  *
  * 清理口径：先按记下的记录主键删 `cg_memory`，再按主键删标记地点与标记用户，
- * 最后复核 11 张业务表（`ALL_TABLES`，与 prisma/schema.prisma 的 11 个 `@@map` 一一对上）行数回到开跑前基线、
+ * 最后复核 15 张业务表（`ALL_TABLES`，与 prisma/schema.prisma 的 15 个 `@@map` 一一对上）行数回到开跑前基线、
  * 库内基表清单与开跑前逐张相同（第 12 张是 Prisma 自己的 `_prisma_migrations` 台账，本轮同样不许变）、
  * `cg_memory` 的列清单仍是建表时那 13 列（Schema 未动）。
  */
@@ -56,9 +56,13 @@ const ALL_TABLES = [
   'cg_user_badge',
   'cg_user_challenge',
   MEM_TABLE,
+  'cg_memory_photo',
+  'cg_feedback',
   'cg_partner_activity',
   'cg_activity_participant',
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  'cg_session',
+  'cg_user_plan'
 ] as const
 
 /** `cg_memory` 建表时的 13 列：清理后原样复核，证明本轮没有碰过 Schema */
@@ -695,7 +699,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
     const deletedMemories = await prisma.memory.deleteMany({ where: { id: { in: createdMemoryIds } } })
     const deletedPlaces = await prisma.campusPlace.deleteMany({ where: { id: { in: createdPlaceIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
-    await h.check('DB14', '清理：只删本轮标记行，11 张业务表回到开跑前基线，表清单与 cg_memory 列清单都未变（Schema 未动）', async (a) => {
+    await h.check('DB14', '清理：只删本轮标记行，15 张业务表回到开跑前基线，表清单与 cg_memory 列清单都未变（Schema 未动）', async (a) => {
       const expectedUsers = createdUserIds.length - cascadeDeletedUsers.length
       a.ok(deletedUsers.count === expectedUsers, `标记用户删除数不对：${deletedUsers.count}/${expectedUsers}（级联用例已删 ${cascadeDeletedUsers.length} 个）`)
       a.ok((await count(USER_TABLE, `\`user_code\` LIKE '${TEST_CODE_PREFIX}%'`)) === 0, '清理后仍有标记用户')

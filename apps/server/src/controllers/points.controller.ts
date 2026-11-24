@@ -14,9 +14,9 @@ import { sendSuccess } from '../utils/response.js'
 /**
  * 阶段4.3.8：派生缓存一致性的 HTTP 入口。**两条都是只读**，方法上没有 POST/PATCH/DELETE。
  *
- * 现状与 4.3.2—4.3.7 完全一致：前缀由 `mountUserScopedRouter()` 挂载，
- * `requireTrustedUserActor` 排在两条路由之前，正式认证（阶段4.6）完成前对任何请求都先回
- * 501 `auth-not-implemented`。这里没有兜底身份、没有默认用户、没有「测试环境就当自己是 1 号用户」。
+ * 前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在两条路由之前：
+ * 认证（阶段4.6）已落地，未认证请求一律 401 `identity-missing`。
+ * 这里没有兜底身份、没有默认用户、没有「测试环境就当自己是 1 号用户」。
  *
  * 每个 handler 的固定四步（照搬已验收的形状）：
  * 1. `rejectIdentityInInput`：包体 / 查询串里出现身份字段 → 400，先于任何业务判定；

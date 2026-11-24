@@ -24,7 +24,7 @@ import {
  * 5) 只在开发口径跑：这一支要用 `injected-test` 身份，生产口径下 `--db` 拒绝执行。
  *
  * 清理口径：先按 `user_id` 删 `cg_user_preference`，再按主键删 `cg_user`（外键本来就是 CASCADE），
- * 删完复核全库 11 张表行数回到开跑前的基线。
+ * 删完复核全库 15 张表行数回到开跑前的基线。
  */
 
 const MARKER_LABEL = '【4.3.2偏好探针】'
@@ -42,7 +42,13 @@ const ALL_TABLES = [
   'cg_memory',
   'cg_partner_activity',
   'cg_activity_participant',
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback。
+  // 收尾复核要盖住全部 15 张业务表：少列一张，等于默认它可以被本轮写脏。
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 
 interface OkFn {
@@ -277,7 +283,14 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       )
       a.ok(stillOn === 1, `A 的行被 B 改掉了：enabled=${stillOn}`)
       await addPreference(actorB, { groupKey: 'interest', optionKey: 'outdoor' }, deps)
-      const both = await count(PREF_TABLE, `\`option_key\` = 'outdoor'`)
+      // 按 option_key 数全表会撞上库里真实/演示用户的偏好行（4.5 之后 `cg_user_preference` 有 50+ 行，不再必然是空库）。
+      // 本条要证的从来不是「全库只有两行 outdoor」，而是「本轮这两个标记用户各有一行」，所以按标记前缀圈定范围。
+      const both = num(
+        (await first(
+          `SELECT COUNT(*) AS n FROM \`${PREF_TABLE}\` p JOIN \`${USER_TABLE}\` u ON u.\`id\` = p.\`user_id\` WHERE p.\`option_key\` = 'outdoor' AND u.\`user_code\` LIKE ?`,
+          `${TEST_CODE_PREFIX}%`
+        )).n
+      )
       a.ok(both === 2, `两个用户各一行应为 2，实得 ${both}`)
       await updatePreference(actorB, { groupKey: 'interest', optionKey: 'outdoor', enabled: false }, deps)
       const aStill = num(
@@ -371,7 +384,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
 
     const deletedPrefs = await prisma.userPreference.deleteMany({ where: { userId: { in: createdUserIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
-    await h.check('DB11', '清理：只删本轮标记行，全库 11 张表回到开跑前基线', async (a) => {
+    await h.check('DB11', '清理：只删本轮标记行，全库 15 张表回到开跑前基线', async (a) => {
       a.ok(deletedUsers.count === createdUserIds.length, `标记用户删除数不对：${deletedUsers.count}`)
       a.ok((await count(USER_TABLE, `\`user_code\` LIKE '${TEST_CODE_PREFIX}%'`)) === 0, '清理后仍有标记用户')
       a.ok((await count(PREF_TABLE)) === baseline[PREF_TABLE], `${PREF_TABLE} 行数没回到基线：${baseline[PREF_TABLE]} → ${await count(PREF_TABLE)}`)

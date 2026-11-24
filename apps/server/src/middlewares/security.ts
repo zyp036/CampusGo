@@ -58,7 +58,7 @@ export function corsPolicy(): RequestHandler {
       callback(null, false)
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Photo-Name'],
     credentials: false,
     maxAge: 600
   })

@@ -31,8 +31,62 @@ const CATEGORY_TO_PLAN_TYPE: Record<string, string> = {
   view: 'y-outdoor'
 }
 
+/** 地点标签 → 规划条件兴趣（多选） */
+const TAG_TO_INTEREST: Record<string, string> = {
+  拍照: 'i-photo',
+  摄影: 'i-photo',
+  散步: 'i-walk',
+  跑步: 'i-sport',
+  换口味: 'i-food',
+  展览: 'i-art',
+  城市: 'i-city',
+  历史: 'i-city',
+  登山: 'i-nature',
+  落日: 'i-photo'
+}
+
+/** 地点标签 → 规划条件心情 */
+const TAG_TO_MOOD: Record<string, string> = {
+  安静: 'm-focus',
+  夜逛: 'm-bored'
+}
+
+/** 地点标签 → 活动人数 */
+const TAG_TO_COMPANY: Record<string, string> = {
+  多人: 'c-few',
+  可约: 'c-few'
+}
+
+/** 地点标签 → 预算 */
+const TAG_TO_BUDGET: Record<string, string> = {
+  免费: 'b-0'
+}
+
 function planTypeOf(category: string): string {
   return CATEGORY_TO_PLAN_TYPE[category] ?? 'y-outdoor'
+}
+
+/**
+ * 根据地点的 category + tags 构建跳转去规划页的 query 参数，
+ * 让 PlanView 打开后自动填好对应的条件，不用用户一个个选。
+ */
+function planQueryFor(place: ExplorePlace): Record<string, string> {
+  const query: Record<string, string> = { type: planTypeOf(place.category), place: place.name }
+
+  const interests: string[] = []
+  for (const tag of place.tags) {
+    const interest = TAG_TO_INTEREST[tag]
+    if (interest && !interests.includes(interest)) interests.push(interest)
+    const mood = TAG_TO_MOOD[tag]
+    if (mood && !query.mood) query.mood = mood
+    const company = TAG_TO_COMPANY[tag]
+    if (company && !query.company) query.company = company
+    const budget = TAG_TO_BUDGET[tag]
+    if (budget && !query.budget) query.budget = budget
+  }
+  if (interests.length > 0) query.interest = interests.join(',')
+
+  return query
 }
 </script>
 
@@ -43,8 +97,8 @@ function planTypeOf(category: string): string {
     :description="
       props.place
         ? content.mode === 'real'
-          ? `${placeCategoryLabel(props.place.category)} · 来自接口 · ${props.place.source === 'VERIFIED' ? '已核实条目' : '演示条目（DEMO）'}`
-          : `${placeCategoryLabel(props.place.category)} · 示例地点`
+          ? `${placeCategoryLabel(props.place.category)} · ${props.place.source === 'VERIFIED' ? '已核实条目' : '接口数据'}`
+          : placeCategoryLabel(props.place.category)
         : undefined
     "
     @close="emit('close')"
@@ -57,26 +111,26 @@ function planTypeOf(category: string): string {
           <dt class="flex items-center gap-1.5 text-ink-400">
             <MapPin :size="12" aria-hidden="true" />距离
           </dt>
-          <dd class="mt-1 font-semibold text-ink-700">{{ props.place.distanceLabel ?? '数据库未标注' }}</dd>
+          <dd class="mt-1 font-semibold text-ink-700">{{ props.place.distanceLabel ?? '—' }}</dd>
         </div>
         <div>
           <dt class="flex items-center gap-1.5 text-ink-400">
             <Clock :size="12" aria-hidden="true" />建议时长
           </dt>
-          <dd class="mt-1 font-semibold text-ink-700">{{ props.place.durationLabel ?? '数据库未标注' }}</dd>
+          <dd class="mt-1 font-semibold text-ink-700">{{ props.place.durationLabel ?? '—' }}</dd>
         </div>
         <div>
           <dt class="flex items-center gap-1.5 text-ink-400">
             <Sunrise :size="12" aria-hidden="true" />最佳时段
           </dt>
-          <dd class="mt-1 font-semibold text-ink-700">{{ props.place.bestTime ?? '数据库未标注' }}</dd>
+          <dd class="mt-1 font-semibold text-ink-700">{{ props.place.bestTime ?? '—' }}</dd>
         </div>
         <div>
           <dt class="flex items-center gap-1.5 text-ink-400">
             <Wallet :size="12" aria-hidden="true" />花费
           </dt>
           <dd class="mt-1 font-semibold text-ink-700">
-            {{ content.mode === 'real' ? '接口没有花费字段' : '示例地点，未核实价格' }}
+            {{ content.mode === 'real' ? '以实际消费为准' : '仅供参考' }}
           </dd>
         </div>
         <div v-if="props.place.address" class="col-span-2">
@@ -153,10 +207,10 @@ function planTypeOf(category: string): string {
           :icon="Sparkles"
           data-testid="place-modal-plan-link"
           :disabled="!props.place"
-          :to="{ name: 'plan', query: { type: props.place ? planTypeOf(props.place.category) : undefined } }"
+          :to="props.place ? { name: 'plan', query: planQueryFor(props.place) } : undefined"
           @click="emit('close')"
         >
-          带着这个方向去规划
+          根据这个去规划
         </BaseButton>
       </div>
     </template>

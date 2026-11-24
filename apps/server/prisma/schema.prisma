@@ -12,8 +12,9 @@
 // 导入脚本可按 ID 幂等 upsert；用户产生的记录用 cuid，避免暴露可枚举的自增号。
 //
 // 有意不建：School（首个演示校园即江苏大学）、Level（等级由 total_exp + 常量门槛推导）、
-// 照片表（阶段8）、签到表（阶段7）、规划规则库与历史表（阶段5 由 AI 接口决定归属）。
-// 地点经纬度列有意不加：探索页地图现在是百分比示意定位，加列只能填假坐标。
+// 照片表（阶段8，DEFERRED）、签到表（阶段7，DEFERRED）。
+// 规划历史表 cg_user_plan 于最终收尾新增（规则规划保存）；AI 规划 DEFERRED，不建规则库。
+// 地点经纬度列已于阶段6 加入（可空），独立地图页取消后作为地点数据保留。
 // 任何表都不保存明文口令；与口令相关的列只有 cg_user.password_hash，且存的是单向摘要。
 
 generator client {
@@ -56,10 +57,13 @@ enum BadgeSource {
   SEED
 }
 
-/// 只表达「还在收人 / 已结束」；报名中·即将满员·已满由参与人数与 capacity 现场算，避免两处口径漂移
+/// 活动自身状态：OPEN 还在收人 / CLOSED 已结束 / CANCELLED 主办人取消。
+/// 报名中·即将满员·已满由参与人数与 capacity 现场算，避免两处口径漂移。
+/// CANCELLED 为最终收尾新增：取消与结束语义不同，取消后保留活动行供已报名用户查看。
 enum ActivityStatus {
   OPEN
   CLOSED
+  CANCELLED
 }
 
 model User {
@@ -89,6 +93,9 @@ model User {
   hosted         PartnerActivity[]
   participations ActivityParticipant[]
   sessions       Session[]
+  plans          UserPlan[]
+  feedback       Feedback[]
+  aiCallLogs     AiCallLog[]
 
   @@map("cg_user")
 }
@@ -112,7 +119,8 @@ model UserPreference {
   @@map("cg_user_preference")
 }
 
-/// 校园与周边地点。阶段6 新增经纬度字段，使用 GCJ-02 坐标系（高德地图要求）。
+/// 校园与周边地点。阶段6 新增经纬度字段，GCJ-02 坐标系。
+/// 独立地图页已取消，坐标作为地点数据保留（详情展示与未来扩展用），可空。
 model CampusPlace {
   id            String      @id @db.VarChar(32)
   name          String      @db.VarChar(64)
@@ -129,13 +137,13 @@ model CampusPlace {
   tags          Json
   source        PlaceSource @default(DEMO)
   
-  /// 阶段6 新增：经纬度坐标（GCJ-02 坐标系，高德地图要求）。
-  /// 可空：历史数据和演示数据可能没有坐标，地图组件需处理 null 情况。
+  /// 阶段6 新增：经纬度坐标（GCJ-02 坐标系）。
+  /// 可空：历史数据和演示数据可能没有坐标，展示层需处理 null 情况。
   /// Decimal(10, 7) 精度足够到厘米级（经度最大 180°，纬度最大 90°）。
   latitude      Decimal?    @db.Decimal(10, 7)
   longitude     Decimal?    @db.Decimal(10, 7)
   
-  /// 阶段6 新增：详细地址（可选，用于地图搜索和路线规划）。
+  /// 详细地址（可选）。独立地图页已取消，作为地点数据保留（详情展示用）。
   address       String?     @db.VarChar(200)
   
   /// 阶段6 新增：校区标识（江苏大学有多个校区，需区分）。
@@ -259,10 +267,54 @@ model Memory {
 
   user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   place CampusPlace? @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  photos MemoryPhoto[]
 
   @@index([userId, dateKey])
   @@index([placeId])
   @@map("cg_memory")
+}
+
+/// 时光记录的照片（本轮落地的真实文件存储，取代阶段3.2 记为 DEFERRED 的照片表）。
+/// 图片本体在服务器磁盘的 storage/memory-photos/<用户id>/<stored_name> 里，库里只放定位与展示要用的元信息；
+/// stored_name 由服务端按记录 id 生成，永远不接受客户端传路径，避免目录穿越。
+/// cg_memory.photo_count 继续作为这张表的行数缓存，由同一事务写入，界面不必先查列表就能显示张数。
+model MemoryPhoto {
+  id         String   @id @default(cuid()) @db.Char(25)
+  memoryId   String   @map("memory_id") @db.Char(25)
+  /// 形如 <photoId>.jpg：只存文件名，不存目录，也不存客户端给的任何路径
+  storedName String   @unique @map("stored_name") @db.VarChar(80)
+  /// 用户在文件选择器里看到的原始名字，只做展示与下载名
+  fileName   String   @map("file_name") @db.VarChar(140)
+  /// 服务端按文件头magic bytes 判定的真实类型，不接受客户端 Content-Type 的自述
+  mimeType   String   @map("mime_type") @db.VarChar(32)
+  byteSize   Int      @map("byte_size")
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@index([memoryId, sortOrder])
+  @@map("cg_memory_photo")
+}
+
+/// 意见反馈：登录用户提交，本人可查自己的历史条目；后台处理视图本轮未做（需要管理员身份体系）。
+/// 只存用户自己写的文字与可选联系方式，不存任何凭据。
+model Feedback {
+  id        String   @id @default(cuid()) @db.Char(25)
+  userId    String   @map("user_id") @db.Char(25)
+  /// 反馈分类 key，取值白名单在服务层（加分类不动表）
+  category  String   @map("category") @db.VarChar(24)
+  content   String   @db.VarChar(500)
+  /// 选填的回访方式（邮箱或手机号原文），界面不对外显示
+  contact   String?  @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("cg_feedback")
 }
 
 /// 兴趣搭子活动。演示数据的主办人不是注册用户，host_user_id 为 NULL，
@@ -276,7 +328,7 @@ model PartnerActivity {
   category        String         @db.VarChar(24)
   description     String         @db.VarChar(500)
   location        String         @db.VarChar(120)
-  /// 演示文案「11 月 18 日 19:00」没有年份，种子留 NULL；有真实时刻时由阶段9 写入
+  /// 真实时刻由发布接口写入；仅有文案日期时留 NULL，展示用 dateLabel
   startsAt        DateTime?      @map("starts_at") @db.DateTime(3)
   dateLabel       String         @map("date_label") @db.VarChar(40)
   capacity        Int
@@ -344,4 +396,65 @@ model Session {
 
   @@index([userId])
   @@map("cg_session")
+}
+
+/// 规划来源：RULE = 前端规则引擎（原有能力）；AI = 百炼模型生成（新增能力）
+enum PlanSource {
+  RULE
+  AI
+}
+
+/// AI 调用状态：SUCCESS = 正常返回；FALLBACK = AI 异常后降级到规则引擎；FAILED = 彻底失败
+enum AiCallStatus {
+  SUCCESS
+  FALLBACK
+  FAILED
+}
+
+/// 生活规划保存（最终收尾新增）。conditions 与 result 都是保存时刻的 JSON 快照：
+/// 规则引擎之后调整也不回头改历史规划。归属与权限走 4.3.1 身份边界，userId 不接受客户端传值。
+/// source 字段区分 AI 生成与规则生成，界面如实展示，不冒充。
+model UserPlan {
+  id         String     @id @default(cuid()) @db.Char(25)
+  userId     String     @map("user_id") @db.Char(25)
+  title      String     @db.VarChar(80)
+  conditions Json
+  result     Json
+  /// 规划来源：RULE（规则引擎）或 AI（百炼模型），默认 RULE 保持向后兼容
+  source     PlanSource @default(RULE)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("cg_user_plan")
+}
+
+/// AI 调用日志：每次 AI 规划请求记录一条，用于限额审计与费用追踪。
+/// 不记录 API Key、不记录用户输入原文（只记条件摘要哈希）、不记录模型输出原文。
+model AiCallLog {
+  id            String      @id @default(cuid()) @db.Char(25)
+  userId        String      @map("user_id") @db.Char(25)
+  /// 使用的模型标识（如 qwen4-max）
+  model         String      @db.VarChar(32)
+  /// 调用状态：SUCCESS / FALLBACK（降级）/ FAILED（失败）
+  status        AiCallStatus
+  /// 输入 Token 数（prompt）
+  inputTokens   Int         @default(0) @map("input_tokens")
+  /// 输出 Token 数（completion）
+  outputTokens  Int         @default(0) @map("output_tokens")
+  /// 请求耗时（毫秒）
+  latencyMs     Int         @map("latency_ms")
+  /// 错误码（失败时记录，如 timeout / rate-limit / api-error）
+  errorCode     String?     @map("error_code") @db.VarChar(32)
+  /// 用户条件摘要（SHA256 前 16 位，不存原文）
+  conditionsHash String?    @map("conditions_hash") @db.VarChar(16)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("cg_ai_call_log")
 }

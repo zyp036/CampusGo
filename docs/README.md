@@ -1,5 +1,12 @@
 目录用于存放开发文档、接口说明与参赛材料。
 
+> **2026-11-24 项目最终收尾已完成**：本文件以下各节为**历史阶段验收存档（保留当时口径）**。最终收尾的权威文档为
+> [功能盘点表与执行台账](feature-inventory-and-plan.md)（逐模块改动 + 测试证据）、
+> [最终验收报告](final-acceptance-report.md)（逐项 PASS/FAIL/BLOCKED/NOT TESTED/DEFERRED）、
+> [Explore 取消报告](explore-removal-report.md)、[生产部署准备指南](deployment-guide.md)、[使用说明](user-guide.md)。
+> 十阶段编号保留不合并；AI 暂缓（DEFERRED）、独立 Explore 页已取消（天气与地点数据保留）。
+> 收尾测试证据：typecheck/build 0 错、Prisma 校验通过、14 套后端探针全绿、全量 Playwright 369 passed / 3 skipped / 0 failed（五视口）、offline 10/10、13 步业务流程 13/13。
+
 > **2026-11-21（阶段4.3.5）测量口径更正，请先读本段再看下面各节**：以下多节里出现的
 > 「`node tmp/shot-diff-all.mjs …` 同尺寸 N 张全部 **0.000%**（最大通道差 0）」这一类结论**不能作为像素证据**——
 > 阶段4.3.5 复查时查明该工具对**同尺寸的两张不同图**也回 0.000%（`size` 取自 naturalWidth/Height，

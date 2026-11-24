@@ -108,14 +108,25 @@ const CANARY_ID = fakeId('cprobecanary')
  * E1 用它决定「未挂载前缀应 404 / 已挂载前缀应 501」，G4 用它钉住写路由的归属范围，
  * 新模块挂载时只需在这一处登记，其余口径由它推导。
  */
-const USER_SCOPED_PREFIXES: readonly string[] = ['/api/preferences', '/api/favorites', '/api/tasks', '/api/achievements', '/api/memories', '/api/activities', '/api/points']
-const USER_SCOPED_CONTROLLERS: readonly string[] = ['preferences', 'favorites', 'tasks', 'achievements', 'memories', 'activities', 'points', 'auth']
+const USER_SCOPED_PREFIXES: readonly string[] = ['/api/preferences', '/api/favorites', '/api/tasks', '/api/achievements', '/api/memories', '/api/activities', '/api/points', '/api/plans', '/api/ai', '/api/feedback']
+const USER_SCOPED_CONTROLLERS: readonly string[] = ['preferences', 'favorites', 'tasks', 'achievements', 'memories', 'memory-photo', 'activities', 'points', 'auth', 'partners', 'plans', 'ai', 'feedback']
 
 /** 阶段4.6：公开认证写路由（不需要登录即可调用） */
 const PUBLIC_AUTH_WRITES: readonly string[] = ['/api/auth/register', '/api/auth/login', '/api/auth/logout']
 
 /** 阶段4.6：所有认证路由（包括公开和需登录的） */
 const ALL_AUTH_ROUTES: readonly string[] = ['/api/auth/register', '/api/auth/login', '/api/auth/logout', '/api/auth/me', '/api/auth/change-password']
+
+/**
+ * 阶段9：混合前缀 `/api/partners` 下**需登录**的写路由（公开 GET 不在此列）。
+ * 与 auth 模块同一类：前缀下混着公开接口，不能整段压守卫，所以逐条登记、逐条验守卫。
+ * 登记一条就必须带守卫——G4 对这份清单里的每一条都断言 guards 含 requireTrustedUserActor。
+ */
+const GUARDED_MIXED_WRITES: readonly string[] = ['POST /api/partners', 'PATCH /api/partners/:id', 'POST /api/partners/:id/cancel']
+
+function isGuardedMixedWrite(route: { method: string; path: string }): boolean {
+  return GUARDED_MIXED_WRITES.includes(`${route.method} ${route.path}`)
+}
 
 function isUserScopedPath(path: string): boolean {
   return USER_SCOPED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
@@ -570,7 +581,7 @@ async function main(): Promise<void> {
   /* E. 真实 HTTP 上的写入边界（四.1 / 四.2 / 二.5 / 二.6）            */
   /* ---------------------------------------------------------------- */
 
-  await check('E1', '生产装配的 app：写路由只有偏好四条 + 收藏两条 + 任务两条 + 徽章一条 + 记录三条 + 报名两条且全部带守卫，未挂载前缀仍按原口径 404', async (a) => {
+  await check('E1', '生产装配的 app：写路由只有偏好四条 + 收藏两条 + 任务两条 + 徽章一条 + 记录五条 + 报名两条 + 主办三条 + 规划三条且全部带守卫，未挂载前缀仍按原口径 404', async (a) => {
     const app = createApp()
     const report = describeMountedRoutes(app)
     a.ok(report.readable, '扫描器读不到路由表，下面的结论都不可信')
@@ -579,34 +590,44 @@ async function main(): Promise<void> {
       'DELETE /api/activities/:id',
       'DELETE /api/favorites/:placeId',
       'DELETE /api/memories/:id',
+      'DELETE /api/memories/photos/:photoId',
+      'DELETE /api/plans/:id',
       'DELETE /api/preferences/:groupKey/:optionKey',
       'DELETE /api/tasks/:challengeId/complete',
       'PATCH /api/auth/me',
       'PATCH /api/memories/:id',
+      'PATCH /api/partners/:id',
+      'PATCH /api/plans/:id',
       'POST /api/achievements/evaluate',
       'POST /api/activities/:id',
+      'POST /api/ai/plan',
       'POST /api/auth/change-password',
       'POST /api/auth/login',
       'POST /api/auth/logout',
       'POST /api/auth/register',
       'POST /api/favorites/:placeId',
+      'POST /api/feedback',
       'POST /api/memories',
+      'POST /api/memories/:id/photos',
+      'POST /api/partners',
+      'POST /api/partners/:id/cancel',
+      'POST /api/plans',
       'POST /api/preferences/:groupKey/:optionKey',
       'POST /api/tasks/:challengeId/complete',
       'PUT /api/preferences/:groupKey/:optionKey',
       'PUT /api/preferences/batch'
     ].sort().join(' ')
-    a.ok(writePaths === expectedWrites, `写路由基线不符（阶段4.6 起 = 偏好四条 + 收藏两条 + 任务两条 + 徽章一条 + 记录三条 + 报名两条 + 认证五条，不多不少）：实得 ${writePaths || '（0 条）'}`)
+    a.ok(writePaths === expectedWrites, `写路由基线不符（本刀之后 = 偏好四条 + 收藏两条 + 任务两条 + 徽章一条 + 记录五条（新增：上传一张、删一张）+ 报名两条 + 认证五条 + 主办三条 + 规划三条 + AI 一条 + 反馈一条，不多不少）：实得 ${writePaths || '（0 条）'}`)
     a.ok(
       report.writeRoutes.filter((r) => !PUBLIC_AUTH_WRITES.includes(r.path)).every((r) => r.guards.includes(USER_ACTOR_GUARD_NAME)),
       `有写路由没挂守卫：${JSON.stringify(report.writeRoutes.filter((r) => !PUBLIC_AUTH_WRITES.includes(r.path)).map((r) => `${r.method} ${r.path}`))}`
     )
     a.ok(report.unguardedWriteRoutes.filter((r) => !PUBLIC_AUTH_WRITES.includes(r.path)).length === 0, `漏守卫的写路由进了路由表：${JSON.stringify(report.unguardedWriteRoutes.filter((r) => !PUBLIC_AUTH_WRITES.includes(r.path)))}`)
-    a.ok(report.routes.length === 44, `路由总数与已知基线不符（44 = /api 下 43 条 + 根路径 1 条）：实得 ${report.routes.length}`)
-    a.ok(report.apiRouteCount === 43, `/api 之下的条数与已知基线不符（43 = 公开只读 8 条 + 偏好 6 条 + 收藏 4 条 + 任务 4 条 + 徽章 4 条 + 记录 5 条 + 报名 4 条 + 积分只读 2 条 + 认证 6 条）：实得 ${report.apiRouteCount}`)
+    a.ok(report.routes.length === 66, `路由总数与已知基线不符（66 = /api 下 65 条 + 根路径 1 条）：实得 ${report.routes.length}`)
+    a.ok(report.apiRouteCount === 65, `/api 之下的条数与已知基线不符（65 = 公开只读 10 条（健康 2 + 地点 2 + 挑战 2 + 徽章定义 2 + 天气 2）+ 偏好 6 条 + 收藏 4 条 + 任务 4 条 + 徽章 4 条 + 记录 9 条（五条记录本体 + 四条图片）+ 报名 4 条 + 积分只读 2 条 + 认证 6 条 + 搭子 6 条 + 规划 5 条 + AI 3 条 + 反馈 2 条）：实得 ${report.apiRouteCount}`)
     a.ok(
-      report.routes.every((r) => r.method === 'GET' || isUserScopedPath(r.path) || ALL_AUTH_ROUTES.includes(r.path)),
-      `只读基线里混进了非 GET 的旧接口：${report.routes.filter((r) => r.method !== 'GET' && !isUserScopedPath(r.path) && !ALL_AUTH_ROUTES.includes(r.path)).map((r) => `${r.method} ${r.path}`).join('、')}`
+      report.routes.every((r) => r.method === 'GET' || isUserScopedPath(r.path) || ALL_AUTH_ROUTES.includes(r.path) || isGuardedMixedWrite(r)),
+      `只读基线里混进了非 GET 的旧接口：${report.routes.filter((r) => r.method !== 'GET' && !isUserScopedPath(r.path) && !ALL_AUTH_ROUTES.includes(r.path) && !isGuardedMixedWrite(r)).map((r) => `${r.method} ${r.path}`).join('、')}`
     )
     // 反向对照：扫描器必须看得见挂在 /api 之外的写路由，否则上面「写路由不多不少」是瞎出来的结论
     const offApi = express()
@@ -932,8 +953,8 @@ async function main(): Promise<void> {
       a.ok(report.readable, '扫描器读不到路由表')
       a.ok(report.unguardedWriteRoutes.filter((r) => !PUBLIC_AUTH_WRITES.includes(r.path)).length === 0, `路由表出现不带守卫的写路由：${JSON.stringify(report.unguardedWriteRoutes.filter((r) => !PUBLIC_AUTH_WRITES.includes(r.path)))}`)
       a.ok(
-        report.writeRoutes.filter((r) => !ALL_AUTH_ROUTES.includes(r.path)).every((r) => isUserScopedPath(r.path) && r.guards.includes(USER_ACTOR_GUARD_NAME)),
-        `写路由越出了「${USER_SCOPED_PREFIXES.join(' + ')} 之下 + 每条带守卫」这个基线：${JSON.stringify(report.writeRoutes.filter((r) => !ALL_AUTH_ROUTES.includes(r.path)).map((r) => `${r.method} ${r.path}`))}`
+        report.writeRoutes.filter((r) => !ALL_AUTH_ROUTES.includes(r.path)).every((r) => (isUserScopedPath(r.path) || isGuardedMixedWrite(r)) && r.guards.includes(USER_ACTOR_GUARD_NAME)),
+        `写路由越出了「${USER_SCOPED_PREFIXES.join(' + ')} 之下 + 混合前缀逐条登记，且每条带守卫」这个基线：${JSON.stringify(report.writeRoutes.filter((r) => !ALL_AUTH_ROUTES.includes(r.path)).map((r) => `${r.method} ${r.path}`))}`
       )
       a.ok(PUBLIC_WRITE_ROUTE_ALLOWLIST.size === 3, `公开写接口白名单数量不对（阶段4.6 = 3 条：register/login/logout）：实得 ${PUBLIC_WRITE_ROUTE_ALLOWLIST.size}`)
     })

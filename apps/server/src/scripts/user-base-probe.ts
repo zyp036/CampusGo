@@ -691,7 +691,7 @@ async function main(): Promise<void> {
     a.ok(!/getPrisma\s*\(/.test(self), '探针里出现了连库调用')
     a.ok(!/node:http|node:https|express|axios|\.\.\/(routes|controllers|server|index)/.test(specifiers), '探针 import 了 HTTP 层')
     a.ok(!self.includes(['create', 'Server'].join('')), '探针起了 HTTP 服务')
-    observe('E4 探针不 import HTTP 层、不起服务、也不碰业务连接池：跑完 11 张业务表行数不变（收尾由 db:schema 复核）')
+    observe('E4 探针不 import HTTP 层、不起服务、也不碰业务连接池：跑完 15 张业务表行数不变（收尾由 db:schema 复核）')
   })
 
   /* ---------------------------------------------------------------- */

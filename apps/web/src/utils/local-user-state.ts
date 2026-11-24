@@ -39,6 +39,14 @@ export interface LocalUserState {
   favoritePlaceIds: string[]
   joinedActivityIds: string[]
   memories: MemoryItem[]
+  /**
+   * 演示模式里被改过的**示例记录**（fork-on-edit）：键是数据文件里的原 id，
+   * 存的是用户改后的内容。示例原文仍在 `data/memories.ts` 里，一个字节都没动，
+   * 这份覆盖只属于这台设备，所以页面必须继续标「本地状态」。
+   */
+  demoMemoryEdits: MemoryItem[]
+  /** 演示模式里被删掉的示例记录 id 墓碑；没有墓碑就是「示例记录照常显示」 */
+  demoMemoryRemovedIds: string[]
   nickname: string
   signature: string
   interestIds: string[]
@@ -51,6 +59,8 @@ export interface LocalUserStateOptions {
   taskIds: string[]
   placeIds: string[]
   activityIds: string[]
+  /** 示例记录 id 清单：只有在这里出现的 id 才允许留下「改过/删过」的本地覆盖 */
+  demoMemoryIds: string[]
   interestIds: string[]
   preferenceKeys: string[]
   defaults: {
@@ -157,6 +167,23 @@ function memoryOr(value: unknown): MemoryItem[] {
   return list.slice(0, MAX_MEMORIES)
 }
 
+/**
+ * 示例记录的本地覆盖：先按 memoryOr 逐条清洗，再把 id 限定在示例清单里。
+ * 认不出来的 id（比如用户手搓的、或数据文件已删掉的示例）整条丢掉——
+ * 覆盖一个不存在的示例记录没有意义，留着只会让页面显示一条哪来的都不是的记录。
+ */
+function demoEditsOr(value: unknown, whitelist: string[]): MemoryItem[] {
+  const allowed = new Set(whitelist)
+  return memoryOr(value).filter((item) => allowed.has(item.id))
+}
+
+/** 示例记录的删除墓碑：只认示例清单里的 id，去重后返回 */
+function removedIdsOr(value: unknown, whitelist: string[]): string[] {
+  const allowed = new Set(whitelist)
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((entry): entry is string => typeof entry === 'string' && allowed.has(entry)))]
+}
+
 /** 偏好只认数据文件里存在的 `分组:选项`，开与关都按布尔值记下来 */
 function preferencesOr(value: unknown, whitelist: string[]): Record<string, boolean> {
   const source = asRecord(value)
@@ -195,6 +222,8 @@ export function loadLocalUserState(options: LocalUserStateOptions): LocalUserSta
     favoritePlaceIds: idsOr(payload?.favoritePlaceIds, [], options.placeIds),
     joinedActivityIds: idsOr(payload?.joinedActivityIds, [], options.activityIds),
     memories: memoryOr(payload?.memories),
+    demoMemoryEdits: demoEditsOr(payload?.demoMemoryEdits, options.demoMemoryIds),
+    demoMemoryRemovedIds: removedIdsOr(payload?.demoMemoryRemovedIds, options.demoMemoryIds),
     nickname: textOr(payload?.nickname, options.defaults.nickname, NICKNAME_MIN, NICKNAME_MAX),
     signature: textOr(payload?.signature, options.defaults.signature, 0, SIGNATURE_MAX),
     interestIds: idsOr(payload?.interestIds, options.defaults.interestIds, options.interestIds),
@@ -210,7 +239,9 @@ export function saveLocalUserState(
     schemaVersion: SCHEMA_VERSION,
     savedAt: new Date().toISOString(),
     ...state,
-    memories: state.memories.slice(0, MAX_MEMORIES)
+    memories: state.memories.slice(0, MAX_MEMORIES),
+    demoMemoryEdits: state.demoMemoryEdits.slice(0, MAX_MEMORIES),
+    demoMemoryRemovedIds: state.demoMemoryRemovedIds.slice(0, MAX_MEMORIES)
   }
   try {
     storage()?.setItem(STORAGE_KEY, JSON.stringify(payload))

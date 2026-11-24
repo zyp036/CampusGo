@@ -1004,7 +1004,7 @@ async function runUnitProbe(): Promise<void> {
   await check('H5', '前端口径未漂移：收藏仍是设备本地的 id 数组，形状尺与页面 testid 在位', (a) => {
     const state = readWebFile('utils/local-user-state.ts')
     const store = readWebFile('stores/user.ts')
-    const card = readWebFile('components/explore/PlaceCard.vue')
+    const card = readWebFile('components/places/PlaceCard.vue')
     const kernel = /CONTENT_ID_LIKE\s*=\s*(\/[^\n]+\/)/.exec(state)?.[1] ?? ''
     a.ok(kernel.length > 0, '读不到前端 local-user-state.ts 的 CONTENT_ID_LIKE，下面的同源自检不可信')
     a.ok(kernel === PLACE_ID_PATTERN.toString(), `后端形状尺与前端不一致：${kernel} vs ${PLACE_ID_PATTERN.toString()}`)
@@ -1221,7 +1221,7 @@ async function runHttpProbe(): Promise<void> {
     }
   })
 
-  await check('G5', '装配期写入边界：写路由基线 19 条，收藏两条都在守卫之后', async (a) => {
+  await check('G5', '装配期写入边界：写路由基线 27 条，收藏两条都在守卫之后', async (a) => {
     const app = createApp()
     const report = describeMountedRoutes(app)
     a.ok(report.readable, '扫描器读不到路由表，下面的结论不可信')
@@ -1230,10 +1230,14 @@ async function runHttpProbe(): Promise<void> {
       'DELETE /api/activities/:id',
       'DELETE /api/favorites/:placeId',
       'DELETE /api/memories/:id',
+      'DELETE /api/memories/photos/:photoId',
+      'DELETE /api/plans/:id',
       'DELETE /api/preferences/:groupKey/:optionKey',
       'DELETE /api/tasks/:challengeId/complete',
       'PATCH /api/auth/me',
       'PATCH /api/memories/:id',
+      'PATCH /api/partners/:id',
+      'PATCH /api/plans/:id',
       'POST /api/achievements/evaluate',
       'POST /api/activities/:id',
       'POST /api/auth/change-password',
@@ -1242,16 +1246,20 @@ async function runHttpProbe(): Promise<void> {
       'POST /api/auth/register',
       'POST /api/favorites/:placeId',
       'POST /api/memories',
+      'POST /api/memories/:id/photos',
+      'POST /api/partners',
+      'POST /api/partners/:id/cancel',
+      'POST /api/plans',
       'POST /api/preferences/:groupKey/:optionKey',
       'POST /api/tasks/:challengeId/complete',
       'PUT /api/preferences/:groupKey/:optionKey',
       'PUT /api/preferences/batch'
     ].sort().join(' ')
-    a.ok(writes === expected, `写路由基线不符（阶段4.6 起 = 偏好 4 条 + 收藏 2 条 + 任务 2 条 + 徽章 1 条 + 记录 3 条 + 报名 2 条 + 认证 5 条）：实得 ${writes || '（0 条）'}`)
+    a.ok(writes === expected, `写路由基线不符（阶段9 起 = 偏好 4 条 + 收藏 2 条 + 任务 2 条 + 徽章 1 条 + 记录 5 条 + 报名 2 条 + 认证 5 条 + 主办 3 条 + 规划 3 条）：实得 ${writes || '（0 条）'}`)
     a.ok(report.writeRoutes.filter((r) => !PUBLIC_WRITE_ROUTE_ALLOWLIST.has(r.path)).every((r) => r.guards.includes(USER_ACTOR_GUARD_NAME)), `有写路由没挂守卫：${JSON.stringify(report.writeRoutes.filter((r) => !PUBLIC_WRITE_ROUTE_ALLOWLIST.has(r.path)).map((r) => `${r.method} ${r.path}`))}`)
     a.ok(report.unguardedWriteRoutes.length === 0, `漏守卫的写路由进了路由表：${JSON.stringify(report.unguardedWriteRoutes.map((r) => `${r.method} ${r.path}`))}`)
-    a.ok(report.apiRouteCount === 43, `/api 之下的条数与已知基线不符（43 = 公开只读 8 条 + 偏好 6 + 收藏 4 + 任务 4 + 徽章 4 + 记录 5 + 报名 4 + 一致性只读 2 + 认证 6）：实得 ${report.apiRouteCount}`)
-    a.ok(report.routes.length === 44, `路由总数与已知基线不符（44 = /api 43 条 + 根路径 1 条）：实得 ${report.routes.length}`)
+    a.ok(report.apiRouteCount === 60, `/api 之下的条数与已知基线不符（60 = 公开只读 10 条（含天气 2）+ 偏好 6 + 收藏 4 + 任务 4 + 徽章 4 + 记录 9 + 报名 4 + 一致性只读 2 + 认证 6 + 搭子 6 + 规划 5）：实得 ${report.apiRouteCount}`)
+    a.ok(report.routes.length === 61, `路由总数与已知基线不符（61 = /api 60 条 + 根路径 1 条）：实得 ${report.routes.length}`)
     const favorites = report.routes.filter((r) => r.path.startsWith('/api/favorites'))
     a.ok(favorites.length === 4, `收藏路由条数不对：${favorites.length}`)
     a.ok(favorites.every((r) => r.guards.includes(USER_ACTOR_GUARD_NAME)), '收藏路由里有未挂守卫的条目')

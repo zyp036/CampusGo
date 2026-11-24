@@ -59,12 +59,9 @@ test.describe('阶段3.4.3 后端关闭', () => {
     await expect(page.getByTestId('challenge-task')).toHaveCount(0)
     await expect(page.getByTestId('badge-tile')).toHaveCount(0)
     await expect(page.getByTestId('challenge-earned')).toHaveText('未判定')
-    await expect(page.getByTestId('challenge-completion')).toContainText('完成状态未接入')
+    await expect(page.getByTestId('challenge-completion')).toContainText('完成记录未取到')
 
-    /* 本地状态那套控件不受后端影响：重置按钮仍可用 */
-    await expect(page.getByTestId('challenge-reset')).toBeEnabled()
-    await page.getByTestId('challenge-reset').click()
-    await expect(page.getByTestId('challenge-feedback')).toContainText('演示进度已回到初始状态')
+    /* 真实模式没有「重置演示进度」按钮（那是示例模式专属）；这里不点它，只验失败态不伪造数据 */
 
     await page.getByTestId('data-source-demo').click()
     await expect(page.getByTestId('badge-tile')).toHaveCount(9)

@@ -1,10 +1,14 @@
+import type { AxiosRequestConfig } from 'axios'
 import type {
   MemoryCreatePayload,
   MemoryListDto,
   MemoryListQuery,
+  MemoryPhotoListDto,
+  MemoryPhotoRemoveResultDto,
   MemoryRemoveResultDto,
   MemoryUpdatePayload,
-  UserMemoryDto
+  UserMemoryDto,
+  UserMemoryPhotoDto
 } from '@/types/api'
 import type { ApiCallResult } from '../request'
 import { deleteEnvelope, getEnvelope, patchEnvelope, postEnvelope } from '../request'
@@ -47,5 +51,55 @@ export const memoriesApi = {
   /** DELETE /api/memories/:id：整行删除，响应只回 `id` 与 `dateKey` 作回执 */
   remove(id: string, config = {}): Promise<ApiCallResult<MemoryRemoveResultDto>> {
     return deleteEnvelope<MemoryRemoveResultDto>(`/memories/${encodeURIComponent(id)}`, config)
+  },
+
+  /* ============================ 图片四条 ============================ */
+
+  /** GET /api/memories/:id/photos：一条记录的图片清单（元信息，不含字节） */
+  listPhotos(memoryId: string, config = {}): Promise<ApiCallResult<MemoryPhotoListDto>> {
+    return getEnvelope<MemoryPhotoListDto>(
+      `/memories/${encodeURIComponent(memoryId)}/photos`,
+      config
+    )
+  },
+
+  /**
+   * POST /api/memories/:id/photos：上传一张。
+   *
+   * 请求体是图片二进制本身（`Content-Type` 用文件真实类型），文件名走 `X-Photo-Name` 头
+   * （`encodeURIComponent` 编码中文，后端 `decodeURIComponent` 还原）。
+   * 超限在 `Content-Length` 阶段就会被 `rejectOversizedUpload` 拦下（413），
+   * 类型不对 415，超过一条记录的上限 409。
+   */
+  uploadPhoto(memoryId: string, file: File, config: AxiosRequestConfig = {}): Promise<ApiCallResult<UserMemoryPhotoDto>> {
+    return postEnvelope<UserMemoryPhotoDto>(
+      `/memories/${encodeURIComponent(memoryId)}/photos`,
+      file,
+      {
+        ...config,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'X-Photo-Name': encodeURIComponent(file.name),
+          ...(config.headers ?? {})
+        }
+      }
+    )
+  },
+
+  /** DELETE /api/memories/photos/:photoId：删一张，磁盘文件与 `photo_count` 一起收 */
+  deletePhoto(photoId: string, config = {}): Promise<ApiCallResult<MemoryPhotoRemoveResultDto>> {
+    return deleteEnvelope<MemoryPhotoRemoveResultDto>(
+      `/memories/photos/${encodeURIComponent(photoId)}`,
+      config
+    )
+  },
+
+  /**
+   * 图片字节取用路径：`/api/memories/photos/:photoId/file`。
+   * 需要登录态（守卫与记录路由同源），界面直接当 `<img :src>` 用，浏览器会带 cookie。
+   * 服务端 `Cache-Control: private, max-age=3600`，同源路径 id 不可变，改名与重传都是新记录。
+   */
+  photoFileUrl(photoId: string): string {
+    return `/api/memories/photos/${encodeURIComponent(photoId)}/file`
   }
 }

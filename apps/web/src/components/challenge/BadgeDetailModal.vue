@@ -12,15 +12,17 @@ import type { BadgeState } from '@/types/models'
 
 /**
  * 徽章详情。三种情况分开说，不再用一句「示例状态」盖住：
- * - 本地有规则：进度按这台浏览器的完成情况实时算；
- * - 本地没规则（示例）：说明卡在哪个阶段的数据上；
- * - 真实接口（earnedKnown === false）：接口只给解锁规则，没有用户获得记录，页面显示「未判定」。
+ * - 本地有规则（演示模式）：进度按这台浏览器的完成情况实时算；
+ * - 本地没规则（示例）：说明卡在哪个数据源上；
+ * - 真实接口 + 已登录同步（earnedKnown !== false）：进度与点亮都来自服务端判定；
+ * - 真实接口 + 记录未取回（earnedKnown === false）：只有解锁规则，页面显示「未判定」。
  *
  * `detail` 是 `GET /api/badges/:id` 这次请求本身的状态；
  * 弹窗正文可以在详情还没回来时先用列表里的定义渲染，所以这一行单独显示，不混淆两个接口。
  */
 defineProps<{
   state: BadgeState | null
+  real?: boolean
   detail?: {
     status: ContentStatus
     message: string
@@ -90,12 +92,12 @@ function progressPercent(state: BadgeState): number {
           </div>
           <div>
             <dt class="text-ink-400">完成记录</dt>
-            <dd class="mt-1 font-semibold text-ink-700">接口未提供</dd>
+            <dd class="mt-1 font-semibold text-ink-700">尚未同步</dd>
           </div>
         </dl>
         <p class="cg-hint">
-          徽章定义里写了「做到多少算解锁」，但「这位用户做到多少」要登录态和用户成就记录，属阶段7；
-          本轮不猜、也不拿示例布尔值冒充真实成就。
+          徽章定义里写了「做到多少算解锁」。登录并同步成就记录后，这里会显示你的真实进度；
+          未同步前不猜、也不拿示例布尔值冒充真实成就。
         </p>
         <p v-if="state.badge.unlockNote" class="mt-2 text-caption leading-relaxed text-ink-500">
           补充说明：{{ state.badge.unlockNote }}
@@ -104,7 +106,7 @@ function progressPercent(state: BadgeState): number {
 
       <div v-else-if="state.target !== null" class="cg-panel">
         <div class="flex items-baseline justify-between">
-          <p class="text-overline text-ink-400">本地进度</p>
+          <p class="text-overline text-ink-400">{{ real ? '服务端进度' : '本地进度' }}</p>
           <p class="text-caption font-semibold tabular-nums text-ink-700">
             {{ state.current }} / {{ state.target }}
           </p>
@@ -116,7 +118,12 @@ function progressPercent(state: BadgeState): number {
           />
         </div>
         <p class="cg-hint">
-          这一条是按这台浏览器的本地完成情况实时算的，所以勾掉任务它会退回去。
+          <template v-if="real">
+            这一条由服务端按你的完成记录判定，点亮以落库的解锁记录为准；完成任务后会自动重新评估。
+          </template>
+          <template v-else>
+            这一条是按这台浏览器的本地完成情况实时算的，所以勾掉任务它会退回去。
+          </template>
         </p>
       </div>
 
@@ -138,7 +145,7 @@ function progressPercent(state: BadgeState): number {
       />
 
       <DemoTag
-        v-if="state.earnedKnown !== false"
+        v-if="!real && state.earnedKnown !== false"
         :text="DEMO_NOTICE_LOCAL_STATE"
       />
     </div>

@@ -31,18 +31,6 @@ export interface WeatherSnapshot {
   advice: string
 }
 
-/** AI 今日推荐（阶段5 前为静态示例） */
-export interface AiRecommendation {
-  title: string
-  summary: string
-  reason: string
-  durationLabel: string
-  budgetLabel: string
-  moodLabel: string
-  tags: string[]
-  steps: string[]
-}
-
 export interface ActivityCategory {
   id: string
   label: string
@@ -174,6 +162,12 @@ export interface PartnerActivity {
   capacity: number
   coverGradient: string
   status: 'recruiting' | 'almostFull' | 'full'
+  /** 真实模式（B5）才有：库里那列的原文，演示数据不带（按 OPEN 处理） */
+  activityStatus?: 'OPEN' | 'CLOSED' | 'CANCELLED'
+  /** 真实模式：当前登录用户是否这条活动的主办人（hostUserCode === 本人 userCode） */
+  isHost?: boolean
+  /** 真实模式：主办人公开用户码；演示数据不带 */
+  hostUserCode?: string | null
 }
 
 /** 个人偏好 */

@@ -64,7 +64,7 @@ const judged = () => props.state.earnedKnown !== false
           class="mt-0.5 block text-[11px] leading-snug text-ink-400"
           data-testid="badge-tile-note"
         >
-          {{ !judged() ? '未判定 · 只有解锁规则' : state.badge.description }}
+          {{ !judged() ? '未判定 · 登录后同步' : state.badge.description }}
         </span>
       </span>
     </button>

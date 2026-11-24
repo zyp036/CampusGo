@@ -32,7 +32,7 @@ import { inspectUserProgress, readUserProgress, reconcileUserCache } from '../se
  * 指令禁止的是对既有业务数据做批量更正，这里一行都没碰。
  *
  * 清理口径：先删明细与记忆（外键 Restrict 的那张表要等定义还在时删），再删任务定义与标记用户，
- * 最后复核 11 张业务表行数回到开跑前基线、表清单与开跑前逐张相同、
+ * 最后复核 15 张业务表行数回到开跑前基线、表清单与开跑前逐张相同、
  * `cg_user` 的列清单与索引清单都未变（Schema 未动）。
  */
 
@@ -54,7 +54,13 @@ const ALL_TABLES = [
   MEMORY_TABLE,
   'cg_partner_activity',
   'cg_activity_participant',
-  'cg_user_favorite_place'
+  'cg_user_favorite_place',
+  // 4.6 之后多了 cg_session，「最终收尾」多了 cg_user_plan，本轮多了 cg_memory_photo 与 cg_feedback。
+  // 收尾复核要盖住全部 15 张业务表：少列一张，等于默认它可以被本轮写脏。
+  'cg_session',
+  'cg_user_plan',
+  'cg_memory_photo',
+  'cg_feedback'
 ] as const
 
 /** 4.3.4 已验收的入账常量：明细里的 points_awarded 恒等于这个数，DB1/DB5 按它核对成对写入 */
@@ -554,7 +560,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
     const deletedChallenges = await prisma.challenge.deleteMany({ where: { id: { in: createdChallengeIds } } })
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
 
-    await h.check('DB10', '清理：只删本轮标记行，11 张表回到基线，cg_user 的列与索引清单未变（Schema 未动）', async (a) => {
+    await h.check('DB10', '清理：只删本轮标记行，15 张表回到基线，cg_user 的列与索引清单未变（Schema 未动）', async (a) => {
       a.ok(deletedUsers.count === createdUserIds.length, `标记用户删除数 ${deletedUsers.count}/${createdUserIds.length}`)
       a.ok((await count(USER_TABLE, `\`user_code\` LIKE '${TEST_CODE_PREFIX}%'`)) === 0, '清理后仍有标记用户')
       a.ok((await count(CHALLENGE_TABLE, `\`id\` LIKE '${CHALLENGE_MARKER_PREFIX}%'`)) === 0, '清理后仍有标记任务定义')
@@ -586,7 +592,7 @@ async function runDatabaseChecks(h: Harness): Promise<void> {
       ).map((row) => String(row.t))
       a.ok(tableNamesBefore.length > 0, '开跑前没拍到表清单，下面的比较没有可比性')
       a.ok([...tablesAfter].sort().join(',') === [...tableNamesBefore].sort().join(','), '表清单与开跑前不一致（本轮只允许行级读写）')
-      h.observe(`DB 模式清理：删明细 ${deletedDetails.count}、记忆 ${deletedMemories.count}、任务定义 ${deletedChallenges.count}、标记用户 ${deletedUsers.count}；11 张表行数回到基线，Schema 一行都没动`)
+      h.observe(`DB 模式清理：删明细 ${deletedDetails.count}、记忆 ${deletedMemories.count}、任务定义 ${deletedChallenges.count}、标记用户 ${deletedUsers.count}；15 张表行数回到基线，Schema 一行都没动`)
     })
   } catch (error) {
     h.observe(`DB 模式异常中断：${String(error).slice(0, 300)}`)

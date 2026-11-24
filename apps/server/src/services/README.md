@@ -25,23 +25,23 @@
 连不上、口令错、库不存在这些现场，不能被一个长连接池蒙过去；业务接口相反，
 每个请求新建客户端会把 MySQL 的握手成本摊到响应时间里。
 
-**写库归属**：`cg_user` 到今天仍然没有任何**属于用户自身资料**的写入口，注册/登录/资料修改都不在后端能力范围内
-（公开只读接口是 `/api` 之下 8 条 GET + 根路径 1 条；用户级前缀另挂 `/api/preferences` 六条（4.3.2）、
-`/api/favorites` 四条（4.3.3）、`/api/tasks` 四条（4.3.4）、`/api/achievements` 四条（4.3.5）、
-`/api/memories` 五条（4.3.6）、`/api/activities` 四条（4.3.7）、`/api/points` 两条只读 GET（4.3.8），
-`/api` 下共 37 条、全站 38 条，其中带身份守卫的**写**路由 14 条；这 29 条用户级接口对真实请求一律 501，见下一段）。
-例外只有两个数字列：从阶段4.3.4 起
-`total_exp` 与 `points` 会被 `user-task.ts` 在完成任务的事务里改，值一律由服务端按任务定义算，
-不接受客户端传数（详见下一段之后）；**阶段4.3.8 一行都不碰这两列**，它只读、只报告差额。
-所以 `password.ts` 生成的摘要
-目前只被探针消费，将来由阶段4.6 的认证服务在事务里写入；
-`user-profile.ts` 也没有挂路由——没有认证就没有「当前用户」，
-真正的 `/me` 要等登录与 Session/JWT 落地之后再接。
+**写库归属**：注册/登录/登出与资料、密码修改已在阶段4.6 落地（`auth.ts` + `user-profile.ts`，
+混合模块 `/api/auth` 六条）。公开只读接口是 `/api` 之下 10 条 GET（健康 2 + 地点 2 + 挑战 2 + 徽章定义 2 + 天气 2）+ 根路径 1 条；
+用户级前缀另挂 `/api/preferences` 六条（4.3.2）、`/api/favorites` 四条（4.3.3）、
+`/api/tasks` 四条（4.3.4）、`/api/achievements` 四条（4.3.5）、`/api/memories` 五条（4.3.6）、
+`/api/activities` 四条（4.3.7）、`/api/points` 两条只读 GET（4.3.8）、`/api/plans` 五条（阶段9），
+另有混合模块 `/api/partners` 六条（阶段9）；`/api` 下共 56 条、全站 57 条，其中写路由 25 条
+（3 条公开认证 + 22 条带身份守卫）。认证（4.6）落地后用户级接口只认会话 cookie，
+未认证的真实请求一律 401 `identity-missing`。
+两个数字列 `total_exp` 与 `points` 从阶段4.3.4 起
+会被 `user-task.ts` 在完成任务的事务里改，值一律由服务端按任务定义算，
+不接受客户端传数；**阶段4.3.8 一行都不碰这两列**，它只读、只报告差额。
+`password.ts` 生成的摘要由认证服务（4.6）在事务里写入，明文口令从不入库。
 
 阶段4.3.1 补的是**写侧的前置边界**，不是写能力本身：`user-identity.ts` 与 `user-subject.ts`
 规定「以某用户身份写数据」只能长成 `runAsUser(actor, ({ subject, tx }) => …)` 这一个样子，
 身份不来自包体、主体状态在事务内复核、归属条件由 `ownedByWhere()` 强制。
-HTTP 侧的 `requireTrustedUserActor` 今天无条件 501（不伪造认证结果），
+HTTP 侧的 `requireTrustedUserActor` 在认证（4.6）落地后只认会话 cookie，未认证一律 401（不伪造认证结果），
 `createApp()` 末尾的 `assertUserWriteBoundary()` 会让任何**漏挂守卫的写接口**在服务启动时就抛错。
 这两个文件的设计与逐条测试对照见 `docs/identity-context-design-4.3.1.md`。
 

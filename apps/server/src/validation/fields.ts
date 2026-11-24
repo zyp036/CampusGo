@@ -2,7 +2,9 @@
  * 阶段3.3.2：字段级校验规则（零新依赖，方案选型见 docs/README.md）。
  *
  * 覆盖六类基础检查：必填、类型、字符串长度、数字范围、格式（正则）、枚举取值。
- * 数组、嵌套对象等复合结构本轮不做，等业务接口真的需要时再扩展，
+ * 复合结构只扩展到「字符串数组」（阶段9 活动发布的 interestTags）与
+ * 「JSON 对象」（阶段9 规划保存的 conditions / result）两种，都是真实调用方驱动的；
+ * 更深的嵌套校验仍不做，等业务接口真的需要时再扩展，
  * 避免在还没有调用方的时候先写一堆用不到的能力。
  *
  * 类型口径（刻意区分两类来源）：
@@ -79,6 +81,24 @@ export type IntegerOptions = NumberOptions
 
 export interface BooleanOptions extends CommonOptions {
   defaultValue?: boolean
+}
+
+export interface StringArrayOptions extends CommonOptions {
+  /** 元素个数上限（护栏，不是产品规则） */
+  maxItems?: number
+  /** 单个元素去掉首尾空格后的长度上限，按字符数计 */
+  itemMaxLength?: number
+  /** 单个元素最短长度，默认 1（空串元素没有意义） */
+  itemMinLength?: number
+  defaultValue?: string[]
+}
+
+export interface JsonObjectOptions extends CommonOptions {
+  /** 序列化后的字节上限（护栏）：按 JSON.stringify 的 UTF-16 长度计，与 note 的字节口径一致 */
+  maxBytes?: number
+  /** 嵌套深度上限（护栏）：对象/数组每套一层 +1，防止拿超深结构打爆解析与日志 */
+  maxDepth?: number
+  defaultValue?: Record<string, unknown>
 }
 
 /**
@@ -250,4 +270,85 @@ export function boolean<const O extends BooleanOptions = {}>(
       )
     })
   ) as FieldSpec<boolean, IsSet<O>>
+}
+
+/**
+ * 字符串数组（阶段9 新增，第一个调用方是活动发布的 `interestTags`）。
+ * 只接受 JSON 请求体里的真数组：query/params 在 HTTP 上没有数组形态，
+ * 重复传键（`?tag=a&tag=b`）按类型错拒，不悄悄拼成数组。
+ * 元素逐个去首尾空格、判长度；重复元素去重（保留首次出现的顺序），
+ * 空串元素按长度下限拒——「标签」没有空串这种取值。
+ */
+export function stringArray<const O extends StringArrayOptions = {}>(
+  options?: O
+): FieldSpec<string[], IsSet<O>> {
+  const opts = options ?? ({} as StringArrayOptions)
+  const itemMin = opts.itemMinLength ?? 1
+  return spec(opts, (raw, source) =>
+    withPresence(opts, raw, source, (value) => {
+      if (!Array.isArray(value)) {
+        return invalid('type', source === 'body' ? '必须是字符串数组' : '不支持数组形态')
+      }
+      if (opts.maxItems !== undefined && value.length > opts.maxItems) {
+        return invalid('max', `最多 ${opts.maxItems} 个元素`)
+      }
+      const seen = new Set<string>()
+      const items: string[] = []
+      for (const entry of value) {
+        if (typeof entry !== 'string') return invalid('type', '每个元素都必须是字符串')
+        const text = entry.trim()
+        const length = Array.from(text).length
+        if (length < itemMin) return invalid('min-length', `每个元素长度不能少于 ${itemMin} 个字符`)
+        if (opts.itemMaxLength !== undefined && length > opts.itemMaxLength) {
+          return invalid('max-length', `每个元素长度不能超过 ${opts.itemMaxLength} 个字符`)
+        }
+        if (!seen.has(text)) {
+          seen.add(text)
+          items.push(text)
+        }
+      }
+      return { status: 'ok', value: items }
+    })
+  ) as FieldSpec<string[], IsSet<O>>
+}
+
+/**
+ * JSON 对象（阶段9 新增，第一个调用方是规划保存的 conditions / result）。
+ * 只接受 JSON 请求体里的普通对象：数组、null、字符串都报类型错；
+ * query/params 在 HTTP 上没有对象形态，一律拒。
+ * 两道护栏：序列化字节上限与嵌套深度上限——内容本身的结构由调用方（Service）负责，
+ * 这一层只保证「是个对象、装得下、不深得不正常」。
+ */
+export function jsonObject<const O extends JsonObjectOptions = {}>(
+  options?: O
+): FieldSpec<Record<string, unknown>, IsSet<O>> {
+  const opts = options ?? ({} as JsonObjectOptions)
+  return spec(opts, (raw, source) =>
+    withPresence(opts, raw, source, (value) => {
+      if (source !== 'body') return invalid('type', '不支持对象形态')
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        return invalid('type', '必须是 JSON 对象')
+      }
+      const text = JSON.stringify(value)
+      if (opts.maxBytes !== undefined && text.length > opts.maxBytes) {
+        return invalid('max', `序列化后不能超过 ${opts.maxBytes} 字节`)
+      }
+      if (opts.maxDepth !== undefined && depthOf(value) > opts.maxDepth) {
+        return invalid('max', `嵌套深度不能超过 ${opts.maxDepth} 层`)
+      }
+      return { status: 'ok', value: value as Record<string, unknown> }
+    })
+  ) as FieldSpec<Record<string, unknown>, IsSet<O>>
+}
+
+/** 对象/数组每套一层 +1；叶子值深度为 0。调用前已保证无环（JSON 请求体解析产物） */
+function depthOf(value: unknown): number {
+  if (typeof value !== 'object' || value === null) return 0
+  const entries = Array.isArray(value) ? value : Object.values(value)
+  let deepest = 0
+  for (const entry of entries) {
+    const d = depthOf(entry)
+    if (d > deepest) deepest = d
+  }
+  return 1 + deepest
 }

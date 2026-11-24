@@ -17,9 +17,8 @@ import { parseTaskChallengeParam } from '../validation/tasks.js'
 /**
  * 阶段4.3.4：用户任务完成记录的 HTTP 入口。
  *
- * 和 4.3.2、4.3.3 一样，**今天没有任何一条请求能走到业务函数**：
- * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前，
- * 正式认证（阶段4.6）完成前它对任何方法、任何路径都先回 501 `auth-not-implemented`。
+ * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前：
+ * 认证（阶段4.6）已落地，守卫只认会话 cookie，未认证请求一律 401 `identity-missing`。
  * 这里没有兜底身份、没有默认用户、没有「测试环境就当自己是 1 号用户」。
  *
  * 每个 handler 的固定四步，顺序不能换（照搬已验收的形状）：

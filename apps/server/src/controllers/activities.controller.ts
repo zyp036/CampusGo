@@ -17,11 +17,8 @@ import { parseActivityIdParam, parseActivityListQuery } from '../validation/acti
 /**
  * 阶段4.3.7：用户「活动报名」的 HTTP 入口。
  *
- * **今天没有任何一条请求能走到业务函数**，原因与 4.3.2—4.3.6 完全相同：
- * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前，
- * 正式认证（阶段4.6）完成前它对任何方法、任何路径都先回 501 `auth-not-implemented`
- * （`middlewares/request-identity.ts:98-100`，GET 也一样）；
- * 就算有人绕过守卫，`getTrustedUserActor(req)` 也只会抛同一个 501，不会给出「某个用户」的结论。
+ * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前：
+ * 认证（阶段4.6）落地后，没有合法会话 cookie 的请求一律 401 `identity-missing`。
  * 这里没有兜底身份、没有默认用户、没有「测试环境就当自己是 1 号用户」。
  *
  * 每个 handler 的固定四步，顺序不能换（照搬已验收的形状）：
@@ -32,8 +29,9 @@ import { parseActivityIdParam, parseActivityListQuery } from '../validation/acti
  *    `userId` 不在其中；名额三项（`joined` / `remaining` / `seatStatus`）是 Service 现算的，
  *    这一层不参与任何名额判定，也不把请求里的任何数字回显出去。
  *
- * 活动的名称、分类、地点这些字段**只在本模块读、不写**：写活动属于阶段9 的主办能力
- * （前缀还空在 `routes/README.md` 第四节），本模块只做「我要占一个名额 / 这个名额还回不回来」。
+ * 活动的名称、分类、地点这些字段**只在本模块读、不写**：发布 / 编辑 / 取消活动
+ * 在阶段9 的 `/api/partners`（`controllers/partners.controller.ts`），本模块只做
+ * 「我要占一个名额 / 这个名额还回不回来」。
  */
 
 /** 请求里不许出现身份字段：包体和查询串都判 */
@@ -84,9 +82,13 @@ export async function getSignupStatusHandler(req: Request, res: Response): Promi
   const status: ActivitySignupStatusDto = await getSignupStatus(actor, id)
   const message = status.signedUp
     ? `你已经报名了这个活动（${status.activity.title}）`
-    : status.activity.remaining > 0
-      ? `你还没有报名，这个活动还剩 ${status.activity.remaining} 个名额`
-      : '你还没有报名，这个活动已经满员了'
+    : status.activity.activityStatus === 'CANCELLED'
+      ? '这个活动已被主办人取消'
+      : status.activity.activityStatus === 'CLOSED'
+        ? '这个活动已经结束了'
+        : status.activity.remaining > 0
+          ? `你还没有报名，这个活动还剩 ${status.activity.remaining} 个名额`
+          : '你还没有报名，这个活动已经满员了'
   sendSuccess(res, status, message)
 }
 

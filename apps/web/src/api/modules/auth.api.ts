@@ -17,6 +17,7 @@
 
 import type {
   ChangePasswordPayload,
+  DemoAccountResultDto,
   LoginPayload,
   LoginResultDto,
   ProfileUpdatePayload,
@@ -31,6 +32,11 @@ export const authApi = {
   /** POST /api/auth/register：注册新用户，成功后自动登录并下发 cookie */
   register(payload: RegisterPayload): Promise<ApiCallResult<RegisterResultDto>> {
     return postEnvelope<RegisterResultDto>('/auth/register', payload)
+  },
+
+  /** POST /api/auth/demo-account：一键生成体验账号，成功后自动登录 */
+  createDemoAccount(): Promise<ApiCallResult<DemoAccountResultDto>> {
+    return postEnvelope<DemoAccountResultDto>('/auth/demo-account', {})
   },
 
   /** POST /api/auth/login：登录，成功后下发 session cookie */

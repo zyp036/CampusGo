@@ -34,11 +34,10 @@ export { challengesApi } from './modules/challenges.api'
 export { badgesApi } from './modules/badges.api'
 
 /**
- * 阶段4.4 第 1 层新增的七个用户级模块（后端 4.3.2—4.3.8 已验收的 29 条接口）。
+ * 阶段4.4 第 1 层新增的用户级模块（后端 4.3.2—4.3.8 已验收的接口）。
  *
- * 它们和上面四个的差别不在代码质量，在**能力状态**：这 29 条全部要求可信用户身份，
- * 而正式认证属阶段4.6，所以现在对任何请求都返回 501 `NOT_IMPLEMENTED`。
- * 本轮刻意不把任何页面接上去——那需要「先有一个假当前用户」，是指令明令禁止的。
+ * 正式认证（阶段4.6）已落地：这些接口只认会话 cookie，未认证请求返回 401 `identity-missing`。
+ * 前端在真实模式登录后逐域接入（B2—B7），演示模式仍走本机草稿。
  */
 export { preferencesApi } from './modules/preferences.api'
 export { favoritesApi } from './modules/favorites.api'
@@ -49,10 +48,21 @@ export { activitiesApi } from './modules/activities.api'
 export { pointsApi } from './modules/points.api'
 export { authApi } from './modules/auth.api'
 
-/**
- * 阶段6 新增：第三方 API 接入（和风天气）。
+/** 阶段9：兴趣搭子公开发现 + 主办人管理（后端 A2 六条），报名/取消报名仍在 activitiesApi */
+export { partnersApi } from './modules/partners.api'
+
+/** 阶段9：我的规划保存/取回（后端 A3 五条），内容由前端规则引擎算出，后端只持久化 */
+export { plansApi } from './modules/plans.api'
+
+/** 阶段9：意见反馈（后端两条：POST 提交 + GET 列表） */
+export { feedbackApi } from './modules/feedback.api'
+
+/** 阶段6 新增：第三方 API 接入（和风天气）。
  *
  * 后端代理所有第三方 API 调用，前端只调用本项目接口。
  * - weatherApi：和风天气实时天气与预报
  */
 export { fetchCurrentWeather, fetchWeatherForecast } from './modules/weather.api'
+
+/** 阶段6+ 新增：AI 智能规划（百炼 API） */
+export { aiApi } from './modules/ai.api'

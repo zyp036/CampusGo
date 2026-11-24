@@ -56,17 +56,15 @@ test.describe('阶段2.2 Plan 规划表单', () => {
     await page.goto('/plan')
 
     const generate = page.getByTestId('plan-generate')
-    const loading = page.getByTestId('plan-loading')
     const result = page.getByTestId('plan-result')
 
     await expect(result, '未生成时不应出现结果卡').toHaveCount(0)
     await expect(generate).toBeEnabled()
 
     await generate.click()
-    await expect(loading, '点击后应立刻进入加载状态').toBeVisible()
+    // 规则引擎是同步的，点击后立刻出结果，不再假装有一段网络加载
     await expect(result).toBeVisible({ timeout: 5_000 })
-    await expect(loading).toHaveCount(0)
-    await expect(result).toContainText('演示样例')
+    await expect(result).toContainText('规则模板规划')
     await expect(page.getByText('已生成')).toBeVisible()
     await expect(generate, '生成后按钮文案应变为重新生成').toContainText('重新生成')
 
@@ -113,8 +111,8 @@ test.describe('阶段2.2 Plan 规划表单', () => {
     const next = page.getByTestId('plan-next')
     await expect(next).toContainText('出发前')
     await expect(next).toContainText('还剩 60 分钟')
-    await expect(next).toContainText('还没接入')
-    await expect(next).toContainText('阶段5/6')
+    await expect(next).toContainText('待接入')
+    await expect(next).toContainText('AI/实时数据暂缓')
 
     // 「回来后 / 攒经验 / 想找人的话」这三条是站内真实可点的跳转
     const links = next.getByRole('link', { name: '去试试' })
@@ -182,7 +180,7 @@ test.describe('阶段2.2 Plan 规划表单', () => {
       /「.+?」超时间 \d+ 分钟、超预算 ¥\d+/
     )
     await expect(failure).toContainText('时间提到 2 小时，或预算提到 ¥20 以内')
-    await expect(failure).toContainText('真实 AI 推荐在阶段5 接入')
+    await expect(failure).toContainText('AI 个性化推荐暂缓接入')
 
     await page.screenshot({ path: shotPath('plan-failed-both-constraints') })
     expect(errors, `页面报错：\n${errors.join('\n')}`).toEqual([])
@@ -203,7 +201,7 @@ test.describe('阶段2.2 Plan 规划表单', () => {
 
     await generate.click()
     await expect(failure, '方向为空应给出失败状态而不是空结果').toBeVisible({ timeout: 5_000 })
-    await expect(failure).toContainText('演示规则库里没有方向')
+    await expect(failure).toContainText('规则模板库里没有方向')
     await expect(failure).toContainText('data/plan.ts')
     await expect(result).toHaveCount(0)
     await expect(page.getByText('无法生成')).toBeVisible()
@@ -725,7 +723,7 @@ test.describe('阶段2.2 Profile 个人中心', () => {
     await expect(dialog).toBeHidden()
 
     await page.getByRole('button', { name: /退出登录/ }).click()
-    await expect(dialog).toContainText('尚未开放')
+    await expect(dialog).toContainText('当前没有登录态可以退出')
     await expect(dialog).toContainText('不会清除任何数据')
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()

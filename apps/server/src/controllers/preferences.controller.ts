@@ -24,10 +24,9 @@ import {
 /**
  * 阶段4.3.2：用户偏好的 HTTP 入口。
  *
- * **今天没有任何一条请求能走到业务函数**。原因写死在阶段4.3.1：
- * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前，
- * 正式认证完成前它对任何方法、任何路径都先回 501 `auth-not-implemented`；
- * 就算有人绕过守卫，`getTrustedUserActor(req)` 也只会抛同一个 501，不会给出「某个用户」的结论。
+ * 这个前缀由 `mountUserScopedRouter()` 挂载，`requireTrustedUserActor` 排在每条路由之前：
+ * 认证（阶段4.6）已落地，未认证请求一律 401 `identity-missing`；
+ * 就算有人绕过守卫，`getTrustedUserActor(req)` 也只会抛 401，不会给出「某个用户」的结论。
  * 这里没有兜底身份、没有默认用户、没有「测试环境就当自己是 1 号用户」——
  * 那是指令三「不得为了让 HTTP 接口运行而伪造用户身份」的直接要求。
  *

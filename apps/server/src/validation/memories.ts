@@ -131,6 +131,15 @@ export const parseMemoryIdParam = validate({
 })
 
 /**
+ * GET / DELETE /api/memories/photos/:photoId 与 …/file —— 用图片标识定位。
+ * 形状与记录 id 同一把尺（`cg_memory_photo.id char(25)` 生成的值正好落在 1—32 之内），
+ * 归属与存在性都判在 Service 里，这一层只挡明显拼错的 id。
+ */
+export const parseMemoryPhotoIdParam = validate({
+  params: { photoId: memoryIdParam() }
+})
+
+/**
  * POST /api/memories —— 新增。
  * 必填三项（标题 / 日期 / 活动类型）对应三列 NOT NULL（`schema.prisma:231,232,235`）；
  * 其余可省略，省略时由 Service 按已验收的规则补（地点列存空串、封面按标题推导、照片数 0）。
