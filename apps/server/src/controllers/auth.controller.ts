@@ -5,6 +5,7 @@ import { parseRegisterBody, parseLoginBody, parseChangePasswordBody, parseProfil
 import { sendSuccess } from '../utils/response.js'
 import { getPrisma } from '../services/prisma.js'
 import { USER_PROFILE_SELECT, toUserProfileDto, updateUserProfile } from '../services/user-profile.js'
+import { config } from '../config/index.js'
 
 /**
  * 阶段4.6：认证 HTTP 入口。
@@ -19,20 +20,24 @@ import { USER_PROFILE_SELECT, toUserProfileDto, updateUserProfile } from '../ser
  * - POST /api/auth/change-password 修改口令
  */
 
-/** cookie 配置 */
+/** cookie 配置：跨域部署时需要 Secure + SameSite=None */
 function setSessionCookie(res: Response, token: string): void {
   const maxAgeSec = Math.round(SESSION_TTL_MS / 1000)
   res.cookie(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: false, // 开发环境 http://localhost
-    sameSite: 'lax',
+    secure: config.isProduction,
+    sameSite: config.isProduction ? 'none' : 'lax',
     path: '/',
     maxAge: maxAgeSec * 1000
   })
 }
 
 function clearSessionCookie(res: Response): void {
-  res.clearCookie(SESSION_COOKIE_NAME, { path: '/' })
+  res.clearCookie(SESSION_COOKIE_NAME, {
+    path: '/',
+    secure: config.isProduction,
+    sameSite: config.isProduction ? 'none' : 'lax'
+  })
 }
 
 /** POST /api/auth/register */

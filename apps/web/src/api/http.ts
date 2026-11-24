@@ -332,6 +332,7 @@ export function createHttp(options: HttpOptions): AxiosInstance {
   const instance = axios.create({
     baseURL: options.baseURL,
     timeout: timeoutMs,
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' }
   })
 

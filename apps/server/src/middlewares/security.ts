@@ -59,7 +59,7 @@ export function corsPolicy(): RequestHandler {
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Photo-Name'],
-    credentials: false,
+    credentials: true,
     maxAge: 600
   })
 }
