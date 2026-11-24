@@ -237,6 +237,35 @@ function getDefaultPlaces(): string[] {
 }
 
 /**
+ * 尝试修复被截断的 JSON。
+ * 当 AI 输出达到 token 上限时，JSON 可能不完整。
+ */
+function tryFixTruncatedJson(jsonStr: string): string {
+  const openBraces = (jsonStr.match(/\{/g) || []).length
+  const closeBraces = (jsonStr.match(/\}/g) || []).length
+  const openBrackets = (jsonStr.match(/\[/g) || []).length
+  const closeBrackets = (jsonStr.match(/\]/g) || []).length
+
+  let fixed = jsonStr.trimEnd()
+
+  // 移除末尾不完整的键值对
+  fixed = fixed.replace(/,\s*"[^"]*"?$/, '')
+  fixed = fixed.replace(/:\s*"[^"]*$/, '')
+  fixed = fixed.replace(/:\s*\d+$/, '')
+  fixed = fixed.replace(/,\s*$/, '')
+
+  // 补全未闭合的括号（先数组后对象）
+  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    fixed += ']'
+  }
+  for (let i = 0; i < openBraces - closeBraces; i++) {
+    fixed += '}'
+  }
+
+  return fixed
+}
+
+/**
  * 解析 AI 响应为规划结果。
  * 
  * @param content AI 返回的 JSON 字符串
@@ -253,13 +282,22 @@ export function parsePlanResponse(content: string): AiPlanResult {
   }
 
   let parsed: unknown
+  
+  // 第一次尝试直接解析
   try {
     parsed = JSON.parse(jsonStr)
-  } catch (error) {
-    throw new ApiError(500, 'AI_PARSE_ERROR', 'AI 返回格式无法解析', {
-      reason: 'invalid-json',
-      detail: error instanceof Error ? error.message : String(error)
-    })
+  } catch {
+    // 第二次尝试：修复被截断的 JSON
+    const fixedJson = tryFixTruncatedJson(jsonStr)
+    try {
+      parsed = JSON.parse(fixedJson)
+    } catch (error) {
+      throw new ApiError(500, 'AI_PARSE_ERROR', 'AI 返回格式无法解析', {
+        reason: 'invalid-json',
+        detail: error instanceof Error ? error.message : String(error),
+        truncated: jsonStr.length > 1000 && !jsonStr.trimEnd().endsWith('}')
+      })
+    }
   }
 
   // 校验结构

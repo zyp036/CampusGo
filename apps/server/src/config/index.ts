@@ -253,7 +253,7 @@ export const config = {
    */
   aiMaxOutputTokens: resolvePositiveInt(
     process.env.AI_MAX_OUTPUT_TOKENS,
-    1500,
+    3000,
     'AI_MAX_OUTPUT_TOKENS',
     { min: 100, max: 8000 },
     warnings

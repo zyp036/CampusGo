@@ -174,10 +174,12 @@ class BailianProvider implements AiProvider {
         logger.error('百炼 API 返回错误', {
           status: response.status,
           latencyMs,
-          error: errorText.slice(0, 200)
+          error: errorText.slice(0, 500),
+          model,
+          url
         })
         throw new BailianApiError(
-          `百炼 API 请求失败：HTTP ${response.status}`,
+          `百炼 API 请求失败：HTTP ${response.status} - ${errorText.slice(0, 200)}`,
           response.status
         )
       }
