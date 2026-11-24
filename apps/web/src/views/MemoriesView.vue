@@ -17,7 +17,6 @@ import {
 } from '@lucide/vue'
 import MemoryCard from '@/components/memories/MemoryCard.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
-import DataSourceBar from '@/components/system/DataSourceBar.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -525,8 +524,6 @@ watch(
       </div>
     </template>
 
-    <DataSourceBar :endpoints="['/memories', '/memories/:id']" scope="我的时光记录" />
-
     <!-- 真实模式未登录：记录属于账号 -->
     <BaseCard v-if="needsLogin" variant="flat" class="mt-5" data-testid="memory-login-prompt">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -946,7 +943,6 @@ watch(
               </button>
             </div>
             <button
-              v-if="isReal"
               type="button"
               class="flex h-16 w-16 items-center justify-center rounded-inner border-2 border-dashed border-line hover:border-brand-400"
               :aria-label="'添加照片'"
@@ -959,11 +955,11 @@ watch(
           <p v-if="formPhotoError" class="mt-1 text-caption text-danger-600" data-testid="memory-form-photo-error">
             {{ formPhotoError }}
           </p>
-          <p v-else-if="isReal" class="mt-1 text-caption text-ink-400">
+          <p v-if="isReal" class="mt-1 text-caption text-ink-400">
             <Camera :size="13" aria-hidden="true" />
             单张不超过 5 MB，保存记录时一起上传
           </p>
-          <DemoTag v-else text="照片上传在真实模式下开放" />
+          <DemoTag v-if="!isReal" text="照片上传在真实模式下开放" />
         </div>
 
         <p

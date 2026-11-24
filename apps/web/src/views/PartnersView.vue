@@ -9,7 +9,6 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import ChipGroup from '@/components/ui/ChipGroup.vue'
-import DataSourceBar from '@/components/system/DataSourceBar.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { coverGradients } from '@/data/gradients'
@@ -284,11 +283,6 @@ onMounted(() => {
         </BaseButton>
       </div>
     </template>
-
-    <DataSourceBar
-      :endpoints="['/partners', '/partners/:id', '/activities']"
-      scope="活动发现、详情与报名"
-    />
 
     <!-- 真实模式未登录：发现仍可公开浏览，报名/发起需要登录 -->
     <BaseCard v-if="isReal && !isAuthed" class="mt-4" data-testid="partner-login-prompt">

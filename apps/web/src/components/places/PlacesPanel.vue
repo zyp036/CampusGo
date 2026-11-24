@@ -6,7 +6,6 @@ import PlaceCard from '@/components/places/PlaceCard.vue'
 import PlaceDetailModal from '@/components/places/PlaceDetailModal.vue'
 import ContentSkeleton from '@/components/system/ContentSkeleton.vue'
 import ContentState from '@/components/system/ContentState.vue'
-import DataSourceBar from '@/components/system/DataSourceBar.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import ChipGroup from '@/components/ui/ChipGroup.vue'
@@ -152,8 +151,6 @@ function retryDetail(): void {
     />
 
     <div class="space-y-3">
-      <DataSourceBar :endpoints="['/places', '/places/:id']" scope="地点列表与详情" />
-
       <div class="flex flex-wrap items-center gap-2">
         <label class="relative min-w-0 flex-1 basis-52">
           <Search

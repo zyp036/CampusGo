@@ -8,7 +8,6 @@ import TaskDetailModal from '@/components/challenge/TaskDetailModal.vue'
 import TaskItem from '@/components/challenge/TaskItem.vue'
 import ContentSkeleton from '@/components/system/ContentSkeleton.vue'
 import ContentState from '@/components/system/ContentState.vue'
-import DataSourceBar from '@/components/system/DataSourceBar.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -251,11 +250,6 @@ onMounted(() => {
         </BaseButton>
       </div>
     </template>
-
-    <DataSourceBar
-      :endpoints="['/challenges', '/challenges/:id', '/badges', '/badges/:id', '/tasks', '/achievements']"
-      scope="挑战任务与徽章定义 + 我的完成记录"
-    />
 
     <!-- 真实模式未登录：定义公开可读，写入属于账号 -->
     <BaseCard v-if="needsLogin" variant="flat" class="mt-5" data-testid="challenge-login-prompt">
