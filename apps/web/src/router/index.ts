@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
@@ -83,7 +83,7 @@ export const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior: () => ({ top: 0 })
 })
